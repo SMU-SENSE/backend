@@ -15,6 +15,7 @@ import com.aac.ieojwo.symbol.service.SymbolService;
 import com.aac.ieojwo.user.domain.AacUser;
 import com.aac.ieojwo.user.service.UserService;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,12 +33,9 @@ public class AacUsageService {
     private final UserService userService;
     private final SymbolService symbolService;
 
-    public AacUsageService(
-            UserFavoriteSymbolRepository favoriteRepository,
-            SymbolUsageLogRepository usageLogRepository,
-            UserService userService,
-            SymbolService symbolService
-    ) {
+    public AacUsageService(UserFavoriteSymbolRepository favoriteRepository,
+                           SymbolUsageLogRepository usageLogRepository,
+                           UserService userService, SymbolService symbolService) {
         this.favoriteRepository = favoriteRepository;
         this.usageLogRepository = usageLogRepository;
         this.userService = userService;
@@ -45,18 +43,18 @@ public class AacUsageService {
     }
 
     @Transactional
-    public SymbolResponse addFavorite(Long userId, Long symbolId) {
+    public SymbolResponse addFavorite(OidcUser principal, Long userId, Long symbolId) {
+        AacUser user = userService.requireAccessibleUser(principal, userId);
+        Symbol symbol = symbolService.getSymbol(symbolId);
         if (favoriteRepository.existsByUserIdAndSymbolId(userId, symbolId)) {
             throw new ConflictException("이미 즐겨찾기에 등록된 상징입니다.");
         }
-        AacUser user = userService.getUser(userId);
-        Symbol symbol = symbolService.getSymbol(symbolId);
         favoriteRepository.save(UserFavoriteSymbol.create(user, symbol));
         return SymbolResponse.from(symbol);
     }
 
-    public List<SymbolResponse> findFavorites(Long userId) {
-        userService.getUser(userId);
+    public List<SymbolResponse> findFavorites(OidcUser principal, Long userId) {
+        userService.requireAccessibleUser(principal, userId);
         return favoriteRepository.findAllByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
                 .map(favorite -> SymbolResponse.from(favorite.getSymbol()))
@@ -64,29 +62,27 @@ public class AacUsageService {
     }
 
     @Transactional
-    public void removeFavorite(Long userId, Long symbolId) {
+    public void removeFavorite(OidcUser principal, Long userId, Long symbolId) {
+        userService.requireAccessibleUser(principal, userId);
         UserFavoriteSymbol favorite = favoriteRepository.findByUserIdAndSymbolId(userId, symbolId)
                 .orElseThrow(() -> new ResourceNotFoundException("즐겨찾기를 찾을 수 없습니다."));
         favoriteRepository.delete(favorite);
     }
 
     @Transactional
-    public UsageLogResponse createUsageLog(Long userId, CreateUsageLogRequest request) {
-        AacUser user = userService.getUser(userId);
+    public UsageLogResponse createUsageLog(OidcUser principal, Long userId, CreateUsageLogRequest request) {
+        AacUser user = userService.requireAccessibleUser(principal, userId);
         Symbol symbol = symbolService.getSymbol(request.symbolId());
         LocalDateTime occurredAt = request.occurredAt() == null ? LocalDateTime.now() : request.occurredAt();
         SymbolUsageLog log = SymbolUsageLog.create(user, symbol, request.action(), occurredAt);
         return UsageLogResponse.from(usageLogRepository.save(log));
     }
 
-    public List<SymbolResponse> findRecentSymbols(Long userId, int limit) {
-        userService.getUser(userId);
+    public List<SymbolResponse> findRecentSymbols(OidcUser principal, Long userId, int limit) {
+        userService.requireAccessibleUser(principal, userId);
         int safeLimit = Math.max(1, Math.min(limit, 50));
         List<SymbolUsageLog> logs = usageLogRepository.findByUserIdAndActionOrderByOccurredAtDesc(
-                userId,
-                UsageAction.SELECT,
-                PageRequest.of(0, 200)
-        );
+                userId, UsageAction.SELECT, PageRequest.of(0, 200));
 
         Map<Long, Symbol> uniqueSymbols = new LinkedHashMap<>();
         for (SymbolUsageLog log : logs) {

@@ -7,6 +7,8 @@ import com.aac.ieojwo.guardian.dto.LinkGuardianRequest;
 import com.aac.ieojwo.guardian.service.GuardianService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,15 +36,16 @@ public class GuardianController {
 
     @PostMapping("/users/{userId}/guardians")
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<GuardianResponse> linkToUser(
-            @PathVariable Long userId,
-            @Valid @RequestBody LinkGuardianRequest request
-    ) {
-        return ApiResponse.ok(guardianService.linkToUser(userId, request), "사용자와 보호자가 연결되었습니다.");
+    public ApiResponse<GuardianResponse> linkToUser(@AuthenticationPrincipal OidcUser principal,
+                                                    @PathVariable Long userId,
+                                                    @Valid @RequestBody LinkGuardianRequest request) {
+        return ApiResponse.ok(guardianService.linkToUser(principal, userId, request),
+                "사용자와 보호자가 연결되었습니다.");
     }
 
     @GetMapping("/users/{userId}/guardians")
-    public ApiResponse<List<GuardianResponse>> findByUser(@PathVariable Long userId) {
-        return ApiResponse.ok(guardianService.findByUser(userId));
+    public ApiResponse<List<GuardianResponse>> findByUser(@AuthenticationPrincipal OidcUser principal,
+                                                          @PathVariable Long userId) {
+        return ApiResponse.ok(guardianService.findByUser(principal, userId));
     }
 }

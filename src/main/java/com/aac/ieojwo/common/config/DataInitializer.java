@@ -16,12 +16,14 @@ import com.aac.ieojwo.user.repository.AacUserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Configuration
+@Profile("!postgres")
 public class DataInitializer {
 
     @Bean

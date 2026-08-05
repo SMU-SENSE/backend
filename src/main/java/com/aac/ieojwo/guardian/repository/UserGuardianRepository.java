@@ -8,4 +8,5 @@ import java.util.List;
 public interface UserGuardianRepository extends JpaRepository<UserGuardian, Long> {
     boolean existsByUserIdAndGuardianId(Long userId, Long guardianId);
     List<UserGuardian> findAllByUserIdOrderByPrimaryGuardianDescIdAsc(Long userId);
+    List<UserGuardian> findAllByGuardianIdOrderByIdAsc(Long guardianId);
 }

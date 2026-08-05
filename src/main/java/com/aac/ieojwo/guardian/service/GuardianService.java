@@ -11,6 +11,7 @@ import com.aac.ieojwo.guardian.repository.GuardianRepository;
 import com.aac.ieojwo.guardian.repository.UserGuardianRepository;
 import com.aac.ieojwo.user.domain.AacUser;
 import com.aac.ieojwo.user.service.UserService;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,11 +25,8 @@ public class GuardianService {
     private final UserGuardianRepository userGuardianRepository;
     private final UserService userService;
 
-    public GuardianService(
-            GuardianRepository guardianRepository,
-            UserGuardianRepository userGuardianRepository,
-            UserService userService
-    ) {
+    public GuardianService(GuardianRepository guardianRepository, UserGuardianRepository userGuardianRepository,
+                           UserService userService) {
         this.guardianRepository = guardianRepository;
         this.userGuardianRepository = userGuardianRepository;
         this.userService = userService;
@@ -49,8 +47,8 @@ public class GuardianService {
     }
 
     @Transactional
-    public GuardianResponse linkToUser(Long userId, LinkGuardianRequest request) {
-        AacUser user = userService.getUser(userId);
+    public GuardianResponse linkToUser(OidcUser principal, Long userId, LinkGuardianRequest request) {
+        AacUser user = userService.requireAccessibleUser(principal, userId);
         Guardian guardian = guardianRepository.findById(request.guardianId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "보호자를 찾을 수 없습니다. guardianId=" + request.guardianId()
@@ -60,14 +58,12 @@ public class GuardianService {
             throw new ConflictException("이미 사용자와 연결된 보호자입니다.");
         }
 
-        UserGuardian relation = UserGuardian.create(
-                user, guardian, request.role(), request.primaryGuardian()
-        );
+        UserGuardian relation = UserGuardian.create(user, guardian, request.role(), request.primaryGuardian());
         return GuardianResponse.from(userGuardianRepository.save(relation));
     }
 
-    public List<GuardianResponse> findByUser(Long userId) {
-        userService.getUser(userId);
+    public List<GuardianResponse> findByUser(OidcUser principal, Long userId) {
+        userService.requireAccessibleUser(principal, userId);
         return userGuardianRepository.findAllByUserIdOrderByPrimaryGuardianDescIdAsc(userId)
                 .stream()
                 .map(GuardianResponse::from)

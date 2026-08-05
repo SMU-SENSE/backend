@@ -19,9 +19,7 @@ public class CustomOidcUserService {
 
     public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
         OidcUser user = delegate.loadUser(userRequest);
-
-        Boolean emailVerified = user.getClaimAsBoolean("email_verified");
-        if (Boolean.FALSE.equals(emailVerified)) {
+        if (!Boolean.TRUE.equals(user.getClaimAsBoolean("email_verified"))) {
             throw new OAuth2AuthenticationException(
                     new OAuth2Error("unverified_email"),
                     "인증되지 않은 구글 이메일입니다."
@@ -34,7 +32,6 @@ public class CustomOidcUserService {
                 user.getClaimAsString("name"),
                 user.getClaimAsString("picture")
         );
-
         return user;
     }
 }

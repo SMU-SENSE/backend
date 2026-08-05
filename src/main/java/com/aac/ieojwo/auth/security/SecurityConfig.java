@@ -8,54 +8,59 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(
-            HttpSecurity http,
-            CustomOidcUserService customOidcUserService,
-            OAuth2SuccessHandler successHandler,
-            OAuth2FailureHandler failureHandler,
-            RestAuthenticationEntryPoint authenticationEntryPoint,
-            ObjectMapper objectMapper
-    ) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, CustomOidcUserService customOidcUserService,
+                                            OAuth2SuccessHandler successHandler,
+                                            OAuth2FailureHandler failureHandler,
+                                            RestAuthenticationEntryPoint authenticationEntryPoint,
+                                            RestAccessDeniedHandler accessDeniedHandler,
+                                            ObjectMapper objectMapper) throws Exception {
+        CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        csrfRepository.setCookiePath("/");
+
         http
                 .cors(Customizer.withDefaults())
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                )
-                .headers(headers -> headers
-                        .frameOptions(frame -> frame.sameOrigin())
-                )
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(csrfRepository)
+                        .ignoringRequestMatchers("/h2-console/**"))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 "/api/v1/health",
+                                "/api/v1/auth/csrf",
                                 "/h2-console/**",
                                 "/oauth2/**",
                                 "/login/oauth2/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
                                 "/error"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .oidcUserService(customOidcUserService::loadUser)
-                        )
+                        .userInfoEndpoint(userInfo -> userInfo.oidcUserService(customOidcUserService::loadUser))
                         .successHandler(successHandler)
                         .failureHandler(failureHandler)
                 )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
                 )
                 .logout(logout -> logout
                         .logoutUrl("/api/v1/auth/logout")
@@ -66,10 +71,7 @@ public class SecurityConfig {
                             response.setStatus(HttpServletResponse.SC_OK);
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                             response.setCharacterEncoding("UTF-8");
-                            objectMapper.writeValue(
-                                    response.getWriter(),
-                                    ApiResponse.ok(null, "로그아웃되었습니다.")
-                            );
+                            objectMapper.writeValue(response.getWriter(), ApiResponse.ok(null, "로그아웃되었습니다."));
                         })
                 );
 

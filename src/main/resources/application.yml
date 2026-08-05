@@ -5,10 +5,13 @@ server:
       cookie:
         http-only: true
         same-site: lax
+        secure: ${SESSION_COOKIE_SECURE:false}
 
 spring:
   application:
     name: malmoa-backend
+  flyway:
+    enabled: false
   datasource:
     url: jdbc:h2:mem:malmoa;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
@@ -31,8 +34,8 @@ spring:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID:local-google-client-id}
-            client-secret: ${GOOGLE_CLIENT_SECRET:local-google-client-secret}
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
             scope:
               - openid
               - profile
@@ -40,6 +43,12 @@ spring:
 
 app:
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+
+springdoc:
+  api-docs:
+    enabled: ${SPRINGDOC_ENABLED:true}
+  swagger-ui:
+    enabled: ${SPRINGDOC_ENABLED:true}
 
 logging:
   level:

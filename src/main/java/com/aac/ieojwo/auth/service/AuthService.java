@@ -26,13 +26,9 @@ public class AuthService {
     private final GuardianRepository guardianRepository;
     private final CurrentAccountService currentAccountService;
 
-    public AuthService(
-            AccountRepository accountRepository,
-            OAuthAccountRepository oauthAccountRepository,
-            TermsAgreementRepository termsAgreementRepository,
-            GuardianRepository guardianRepository,
-            CurrentAccountService currentAccountService
-    ) {
+    public AuthService(AccountRepository accountRepository, OAuthAccountRepository oauthAccountRepository,
+                       TermsAgreementRepository termsAgreementRepository, GuardianRepository guardianRepository,
+                       CurrentAccountService currentAccountService) {
         this.accountRepository = accountRepository;
         this.oauthAccountRepository = oauthAccountRepository;
         this.termsAgreementRepository = termsAgreementRepository;
@@ -41,12 +37,7 @@ public class AuthService {
     }
 
     @Transactional
-    public Account upsertGoogleAccount(
-            String providerSubject,
-            String email,
-            String name,
-            String profileImageUrl
-    ) {
+    public Account upsertGoogleAccount(String providerSubject, String email, String name, String profileImageUrl) {
         String normalizedSubject = requireText(providerSubject, "구글 사용자 식별값이 없습니다.");
         String normalizedEmail = requireText(email, "구글 이메일 정보가 없습니다.").toLowerCase();
         String normalizedName = name == null || name.isBlank() ? normalizedEmail : name.trim();
@@ -60,12 +51,8 @@ public class AuthService {
                     oauthAccount.updateProviderEmail(normalizedEmail);
                     return account;
                 })
-                .orElseGet(() -> createGoogleAccount(
-                        normalizedSubject,
-                        normalizedEmail,
-                        normalizedName,
-                        normalizedImage
-                ));
+                .orElseGet(() -> createGoogleAccount(normalizedSubject, normalizedEmail,
+                        normalizedName, normalizedImage));
     }
 
     public AccountResponse getCurrentAccount(OidcUser principal) {
@@ -88,14 +75,11 @@ public class AuthService {
         account.completeOnboarding(request.accountType());
 
         termsAgreementRepository.save(TermsAgreement.create(
-                account, TermsType.TERMS_OF_SERVICE, CURRENT_TERMS_VERSION, true
-        ));
+                account, TermsType.TERMS_OF_SERVICE, CURRENT_TERMS_VERSION, true));
         termsAgreementRepository.save(TermsAgreement.create(
-                account, TermsType.PRIVACY_POLICY, CURRENT_TERMS_VERSION, true
-        ));
+                account, TermsType.PRIVACY_POLICY, CURRENT_TERMS_VERSION, true));
         termsAgreementRepository.save(TermsAgreement.create(
-                account, TermsType.MARKETING, CURRENT_TERMS_VERSION, request.marketingAgreed()
-        ));
+                account, TermsType.MARKETING, CURRENT_TERMS_VERSION, request.marketingAgreed()));
 
         if (request.accountType() == AccountType.GUARDIAN || request.accountType() == AccountType.SUPPORTER) {
             guardianRepository.findByAccountId(account.getId())
@@ -104,37 +88,21 @@ public class AuthService {
                                 existing.linkAccount(account);
                                 return existing;
                             })
-                            .orElseGet(() -> guardianRepository.save(
-                                    Guardian.createForAccount(
-                                            account,
-                                            account.getName(),
-                                            account.getEmail(),
-                                            normalize(request.phoneNumber())
-                                    )
-                            )));
+                            .orElseGet(() -> guardianRepository.save(Guardian.createForAccount(
+                                    account, account.getName(), account.getEmail(),
+                                    normalize(request.phoneNumber())))));
         }
 
         return AccountResponse.from(account);
     }
 
-    private Account createGoogleAccount(
-            String providerSubject,
-            String email,
-            String name,
-            String profileImageUrl
-    ) {
-        Account account = accountRepository.findByEmailIgnoreCase(email)
-                .orElseGet(() -> accountRepository.save(
-                        Account.createSocialAccount(email, name, profileImageUrl)
-                ));
-
-        OAuthAccount oauthAccount = OAuthAccount.create(
-                account,
-                OAuthProvider.GOOGLE,
-                providerSubject,
-                email
-        );
-        oauthAccountRepository.save(oauthAccount);
+    private Account createGoogleAccount(String providerSubject, String email, String name, String profileImageUrl) {
+        if (accountRepository.existsByEmailIgnoreCase(email)) {
+            throw new ConflictException("동일한 이메일의 계정이 이미 다른 로그인 식별자에 연결되어 있습니다.");
+        }
+        Account account = accountRepository.save(Account.createSocialAccount(email, name, profileImageUrl));
+        oauthAccountRepository.save(OAuthAccount.create(
+                account, OAuthProvider.GOOGLE, providerSubject, email));
         return account;
     }
 

@@ -1,241 +1,86 @@
 # 말모아 Backend 1
 
-AI-IoT 기반 적응형 AAC 프로젝트의 **Backend 1 공통 서버**입니다.
-
-## 담당 범위
-
-- Spring Boot 공통 구조 및 공통 응답/예외 처리
-- AAC 사용자 프로필과 화면 모드
-- 보호자 계정 및 사용자-보호자 연결
-- 상징 카테고리와 상징 카드
-- 즐겨찾기, 최근 사용, 상징 사용 기록
-- AI/IoT 담당이 이후 연결할 API 기반 제공
+발달장애인용 적응형 AAC 시스템의 Spring Boot 백엔드입니다. Google OIDC로 로그인하는 보호자 계정과 실제 AAC 사용자 프로필을 분리하며, 보호자-AAC 사용자 연결을 기준으로 접근 권한을 검사합니다.
 
 ## 기술 스택
 
-- Java 21
-- Spring Boot 3.5.16
-- Spring Web
-- Spring Data JPA
-- Bean Validation
-- H2: 로컬 즉시 실행
-- PostgreSQL: 팀 통합용 프로필
-- Maven
+- Java 21, Spring Boot 3.5.16, Maven Wrapper
+- Spring Web, Security, OAuth2 Client, Data JPA, Validation
+- H2 기본 개발/테스트 DB
+- PostgreSQL 16, Flyway, Testcontainers
+- springdoc-openapi 2.8.17
+- JUnit 5, MockMvc, Spring Security Test
 
-## 실행 방법
+## 기본 로컬 실행
 
-### 1. IntelliJ에서 실행
-
-1. 압축을 해제합니다.
-2. IntelliJ에서 `pom.xml`을 프로젝트로 엽니다.
-3. 프로젝트 SDK를 Java 21로 지정합니다.
-4. `MalmoaBackendApplication`을 실행합니다.
-
-### 2. Maven 명령으로 실행
-
-```bash
-mvn spring-boot:run
-```
-
-Windows PowerShell에서도 동일합니다.
+실행에는 Google OAuth 환경변수가 필요합니다. 실제 값은 저장소에 커밋하지 않습니다.
 
 ```powershell
-mvn spring-boot:run
+$env:GOOGLE_CLIENT_ID="..."
+$env:GOOGLE_CLIENT_SECRET="..."
+$env:FRONTEND_BASE_URL="http://localhost:3000"
+.\mvnw.cmd spring-boot:run
 ```
 
-## 실행 확인
+- Health: http://localhost:8080/api/v1/health
+- H2 Console: http://localhost:8080/h2-console
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
+- OpenAPI JSON: http://localhost:8080/v3/api-docs
 
-브라우저 또는 Postman:
+기본 프로필은 `jdbc:h2:mem:malmoa`를 사용하고 샘플 카테고리와 상징을 적재합니다. PostgreSQL 프로필에서는 샘플 데이터를 자동 적재하지 않습니다.
 
-```text
-GET http://localhost:8080/api/v1/health
-```
-
-예상 응답:
-
-```json
-{
-  "success": true,
-  "data": {
-    "status": "UP",
-    "service": "malmoa-backend"
-  },
-  "message": null
-}
-```
-
-## H2 콘솔
-
-```text
-http://localhost:8080/h2-console
-```
-
-- JDBC URL: `jdbc:h2:mem:malmoa`
-- User Name: `sa`
-- Password: 비워 둠
-
-## 기본 데이터
-
-서버 시작 시 다음 데이터가 자동 생성됩니다.
-
-- 사용자: 김민우, SIMPLE, 2×2
-- 보호자: 최성희
-- 카테고리: 음식, 감정, 사람, 장소, 긴급어, 인사·사회어, 시간, 어미, 신체
-- 기본 상징: 물, 밥, 좋아요, 싫어요, 도와주세요, 아파요 등
-
-## 핵심 API
-
-### 상태 확인
-
-```text
-GET /api/v1/health
-```
-
-### 사용자
-
-```text
-POST  /api/v1/users
-GET   /api/v1/users
-GET   /api/v1/users/{userId}
-PATCH /api/v1/users/{userId}/settings
-```
-
-사용자 생성 예시:
-
-```json
-{
-  "name": "박지현",
-  "mode": "GENERAL",
-  "gridSize": "GRID_3X3"
-}
-```
-
-### 보호자
-
-```text
-POST /api/v1/guardians
-GET  /api/v1/guardians
-POST /api/v1/users/{userId}/guardians
-GET  /api/v1/users/{userId}/guardians
-```
-
-### 카테고리·상징
-
-```text
-POST /api/v1/categories
-GET  /api/v1/categories
-POST /api/v1/symbols
-GET  /api/v1/symbols
-GET  /api/v1/symbols/{symbolId}
-```
-
-필터:
-
-```text
-GET /api/v1/symbols?categoryId=1
-GET /api/v1/symbols?emergency=true
-```
-
-### 즐겨찾기
-
-```text
-POST   /api/v1/users/{userId}/favorites
-GET    /api/v1/users/{userId}/favorites
-DELETE /api/v1/users/{userId}/favorites/{symbolId}
-```
-
-등록 요청:
-
-```json
-{
-  "symbolId": 1
-}
-```
-
-### 최근 사용·사용 로그
-
-```text
-POST /api/v1/users/{userId}/usage-logs
-GET  /api/v1/users/{userId}/recent-symbols?limit=10
-```
-
-사용 로그 요청:
-
-```json
-{
-  "symbolId": 1,
-  "action": "SELECT"
-}
-```
-
-동작 값:
-
-- `SELECT`: 상징 선택
-- `CANCEL`: 선택 취소
-- `SPEAK`: 실제 TTS 발화
-
-## PostgreSQL 실행
-
-PostgreSQL에 `malmoa` 데이터베이스를 만든 뒤 환경변수를 지정합니다.
+## 테스트
 
 ```powershell
-$env:DB_URL="jdbc:postgresql://localhost:5432/malmoa"
-$env:DB_USERNAME="postgres"
-$env:DB_PASSWORD="비밀번호"
-mvn spring-boot:run -Dspring-boot.run.profiles=postgres
+# Docker 없이 실행되는 H2 기반 기본 테스트
+.\mvnw.cmd clean test
+
+# Docker가 필요한 실제 PostgreSQL 통합 테스트
+.\mvnw.cmd -Ppostgres-it verify
 ```
 
-## Backend 2·AI·IoT 연결 경계
+`postgres-it`은 Testcontainers PostgreSQL에서 Flyway, Hibernate `validate`, Repository CRUD, unique/FK 제약을 검증합니다. 테스트용 OAuth 값은 실제 로그인을 성공 처리하지 않으며, Google 브라우저 로그인은 실제 Client ID/Secret으로 별도 검증해야 합니다.
 
-### AI 담당에 제공할 데이터
+## PostgreSQL 로컬 실행
 
-Backend 1이 사용자 및 상징 유효성을 확인한 뒤 다음 형태로 AI 연동 모듈에 전달할 예정입니다.
+Docker Desktop을 먼저 실행하고 저장소 루트에서 환경 파일을 준비합니다.
 
-```json
-{
-  "userId": 1,
-  "symbolIds": [1, 2],
-  "listenerType": "TEACHER",
-  "style": "POLITE"
-}
+```powershell
+Copy-Item .env.example .env
+# .env의 replace-with-local-password를 로컬 전용 비밀번호로 변경
+.\scripts\postgres-up.ps1
+.\scripts\run-postgres.ps1
 ```
 
-### IoT 담당이 호출할 예정인 API
+일반 실행은 실제 Google OAuth 변수도 필요합니다. DB/스키마 스모크만 수행할 때는 `.\scripts\run-postgres.ps1 -Smoke`를 사용할 수 있지만 Google 로그인은 검증하지 않습니다. PostgreSQL 프로필은 Flyway V1-V4 적용 후 Hibernate `ddl-auto=validate`를 수행합니다.
 
-다음 단계에서 별도 모듈로 추가합니다.
-
-```text
-POST /api/v1/sensors/heart-rate
-POST /api/v1/emergency-events
-GET  /api/v1/users/{userId}/current-state
+```powershell
+.\scripts\smoke-test.ps1
+.\scripts\postgres-down.ps1              # volume 유지
+.\scripts\postgres-down.ps1 -ResetData   # volume과 모든 로컬 DB 데이터 삭제
 ```
 
-## 첫 검증 순서
+Compose는 PostgreSQL 포트를 `127.0.0.1`에만 공개하고 named volume `malmoa_postgres_data`를 사용합니다. 이 구성은 로컬 개발용이며 운영 배포 설정이 아닙니다. 상세 절차와 psql 조회, 오류 해결은 `docs/POSTGRESQL_LOCAL_SETUP.md`를 참고합니다.
 
-1. `GET /api/v1/health`가 200인지 확인
-2. `GET /api/v1/categories`에 9개 카테고리가 나오는지 확인
-3. `GET /api/v1/symbols?emergency=true`에 긴급 상징 4개가 나오는지 확인
-4. 사용자 1번에 상징 1번을 즐겨찾기로 등록
-5. 사용자 1번의 상징 사용 로그 생성
-6. 최근 사용 상징 조회
+## API 범위
 
-## 다음 구현 순서
+- 인증: `/api/v1/auth/**`
+- 권장 AAC 사용자 API: `/api/v1/me/aac-users/**`
+- 호환 API: `/api/v1/users/**`
+- 보호자: `/api/v1/guardians`, 사용자별 `/guardians`
+- 상징: `/api/v1/categories`, `/api/v1/symbols`
+- 즐겨찾기/사용기록: AAC 사용자 하위 경로
 
-1. 구글 로그인 프론트엔드 연결 및 접근 권한 테스트
-2. 사용자별 활성 상징 및 화면 배치
-3. 문장 생성 요청·후보·최종 선택 테이블
-4. 이미지 업로드 저장소
-5. PostgreSQL + Docker Compose
-6. AI 문장 생성 모듈 연동
-7. IoT 심박수 및 긴급 이벤트 연동
+기존 `/api/v1/users/**` API는 삭제하지 않고 동일한 소유권 검사를 적용했습니다. 신규 연동은 `/api/v1/me/aac-users/**`를 사용합니다. 자세한 계약은 `docs/API_CONTRACT.md`를 참고합니다.
 
-## Google 간편 로그인
+## 보안
 
-Google OAuth2/OIDC 로그인 기능이 추가되어 있습니다.
+- 인증 기준은 이메일이 아닌 Google OIDC `sub`입니다.
+- 세션 쿠키는 HttpOnly, SameSite=Lax이며 운영에서 Secure=true를 사용합니다.
+- CORS는 설정된 프론트엔드 Origin만 허용하고 credentials를 사용합니다.
+- 변경 요청은 `XSRF-TOKEN` 쿠키 값을 `X-XSRF-TOKEN` 헤더로 보내야 합니다.
+- `.env`, DB 비밀번호, Google 비밀번호, OAuth secret/token은 커밋하거나 로그에 출력하지 않습니다.
 
-- 로그인 시작: `GET /oauth2/authorization/google`
-- 현재 계정: `GET /api/v1/auth/me`
-- 최초 설정: `POST /api/v1/auth/onboarding`
-- 로그아웃: `POST /api/v1/auth/logout`
+## 구현 범위
 
-실행 전 `GOOGLE_LOGIN.md`와 `.env.example`을 확인하세요.
+현재 인증, 온보딩, Guardian 연결, AAC 사용자 소유권, 상징, 즐겨찾기, 사용기록, Swagger, Flyway 및 자동 테스트를 포함합니다. AI 문장 생성, IoT, WebSocket, FCM, 배포는 포함하지 않습니다.
