@@ -67,3 +67,35 @@ AAC 사용자 생성 요청:
 - 로그인 콜백 후 `/api/v1/auth/me` 재조회
 - 401은 로그인 이동, 403은 권한/CSRF 오류로 구분
 - AAC 사용자 화면을 권장 `/api/v1/me/aac-users/**` 경로로 전환
+
+## Figma 온보딩 매핑
+
+| 화면 | API | 핵심 계약 |
+|---|---|---|
+| 09 사용자 프로필 | `POST /api/v1/me/aac-users` | `name`, `birthDate`, `relationshipType`, `emergencyContact` 필수. `OTHER`이면 `relationshipDetail` 필수 |
+| 10 화면 격자 | `PATCH /api/v1/me/aac-users/{id}/onboarding/grid` | `GRID_2X2`, `GRID_3X3`, `GRID_4X4` |
+| 11 TTS 음성 | `PATCH /api/v1/me/aac-users/{id}/voice-settings` | `CHILD_MALE`/`CHILD_FEMALE`, 속도 0.7~1.3 |
+| 12 가입정보 확인 | `GET /api/v1/me/aac-users/{id}/onboarding-summary` | 프로필·현재 보호자 관계·격자·음성을 한 번에 반환 |
+| 12 확정 | `POST /api/v1/me/aac-users/{id}/onboarding/confirm` | 격자와 음성 완료 후 `CONFIRMED` 전환 |
+
+프로필 생성 예시:
+
+```json
+{"name":"민수","birthDate":"2012-01-15","relationshipType":"PARENT","relationshipDetail":null,"emergencyContact":"01012345678","notes":"큰 소리에 민감함","profileImageUrl":null}
+```
+
+초기값은 `mode=SIMPLE`, `gridSize=GRID_3X3`, `voiceType=CHILD_MALE`, `speechRate=1.0`입니다. 진행 상태는 `PROFILE_COMPLETED → GRID_COMPLETED → VOICE_COMPLETED → CONFIRMED`입니다. 관계는 보호자별로 달라질 수 있어 `user_guardians`에 저장합니다.
+
+## Device Pairing
+
+| 화면 | API | 설명 |
+|---|---|---|
+| 06 QR 연결 / 07 코드 | `POST /api/v1/me/aac-users/{id}/device-pairings` | QR payload와 6자리 코드를 함께 발급, 10분 유효 |
+| 남은 시간 | `GET /api/v1/me/aac-users/{id}/device-pairings/current` | 자격 증명은 재노출하지 않고 만료시각/초만 반환 |
+| 새로고침 | `POST /api/v1/me/aac-users/{id}/device-pairings/refresh` | 이전 ACTIVE 세션 즉시 REVOKED |
+| 사용자 기기 QR | `POST /api/v1/device-pairings/claim/qr` | 공개 endpoint, opaque token이 인증 수단 |
+| 사용자 기기 코드 | `POST /api/v1/device-pairings/claim/code` | 공개 endpoint, 정확히 6자리 숫자 |
+| 연결 기기 | `GET /api/v1/me/aac-users/{id}/devices` | 현재 보호자가 접근 가능한 사용자의 기기 목록 |
+| 06-B / 07-B | claim 응답 `410 Gone` | 만료 세션을 없는 자격 증명(404)과 구분 |
+
+claim은 `deviceId`, 선택 `deviceName`, `deviceType`(`TABLET`, `MOBILE`, `WEB`, `UNKNOWN`)을 받습니다. 성공 응답은 `aacUserId`, `deviceId`, `pairedAt`만 반환합니다. 사용됨/취소됨은 409, 만료는 410, 미존재는 404, 형식 오류는 400입니다. claim 두 경로만 인증과 CSRF 예외이며, 발급·조회·기기 목록에는 기존 세션 인증과 AAC 사용자 소유권 검사가 적용됩니다.

@@ -52,7 +52,7 @@ Copy-Item .env.example .env
 .\scripts\run-postgres.ps1
 ```
 
-일반 실행은 실제 Google OAuth 변수도 필요합니다. DB/스키마 스모크만 수행할 때는 `.\scripts\run-postgres.ps1 -Smoke`를 사용할 수 있지만 Google 로그인은 검증하지 않습니다. PostgreSQL 프로필은 Flyway V1-V4 적용 후 Hibernate `ddl-auto=validate`를 수행합니다.
+일반 실행은 실제 Google OAuth 변수도 필요합니다. DB/스키마 스모크만 수행할 때는 `.\scripts\run-postgres.ps1 -Smoke`를 사용할 수 있지만 Google 로그인은 검증하지 않습니다. PostgreSQL 프로필은 Flyway V1-V5 적용 후 Hibernate `ddl-auto=validate`를 수행합니다.
 
 ```powershell
 .\scripts\smoke-test.ps1
@@ -70,6 +70,8 @@ Compose는 PostgreSQL 포트를 `127.0.0.1`에만 공개하고 named volume `mal
 - 보호자: `/api/v1/guardians`, 사용자별 `/guardians`
 - 상징: `/api/v1/categories`, `/api/v1/symbols`
 - 즐겨찾기/사용기록: AAC 사용자 하위 경로
+- 온보딩 설정: 격자, TTS 음성, 가입정보 summary
+- 기기 연결: 보호자 pairing 발급/재발급 및 공개 QR/코드 claim
 
 기존 `/api/v1/users/**` API는 삭제하지 않고 동일한 소유권 검사를 적용했습니다. 신규 연동은 `/api/v1/me/aac-users/**`를 사용합니다. 자세한 계약은 `docs/API_CONTRACT.md`를 참고합니다.
 
@@ -83,4 +85,4 @@ Compose는 PostgreSQL 포트를 `127.0.0.1`에만 공개하고 named volume `mal
 
 ## 구현 범위
 
-현재 인증, 온보딩, Guardian 연결, AAC 사용자 소유권, 상징, 즐겨찾기, 사용기록, Swagger, Flyway 및 자동 테스트를 포함합니다. AI 문장 생성, IoT, WebSocket, FCM, 배포는 포함하지 않습니다.
+현재 인증, Guardian 연결, AAC 사용자 프로필/격자/TTS 온보딩, 기기 pairing/Device, 소유권, 상징, 즐겨찾기, 사용기록, Swagger, Flyway 및 자동 테스트를 포함합니다. AI 문장 생성, IoT, WebSocket, FCM, 배포는 포함하지 않습니다.

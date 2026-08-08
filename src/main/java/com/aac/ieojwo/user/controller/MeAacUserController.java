@@ -11,9 +11,14 @@ import com.aac.ieojwo.guardian.service.GuardianService;
 import com.aac.ieojwo.symbol.dto.SymbolResponse;
 import com.aac.ieojwo.user.dto.CreateUserRequest;
 import com.aac.ieojwo.user.dto.UpdateUserSettingsRequest;
+import com.aac.ieojwo.user.dto.UpdateGridRequest;
+import com.aac.ieojwo.user.dto.UpdateVoiceSettingsRequest;
+import com.aac.ieojwo.user.dto.OnboardingSummaryResponse;
 import com.aac.ieojwo.user.dto.UserResponse;
 import com.aac.ieojwo.user.service.UserService;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -62,6 +67,35 @@ public class MeAacUserController {
                 "사용자 설정이 변경되었습니다.");
     }
 
+    @Operation(tags = "AAC User Setup", summary = "Figma 10 격자 설정")
+    @PatchMapping("/{userId}/onboarding/grid")
+    public ApiResponse<UserResponse> updateGrid(@AuthenticationPrincipal OidcUser principal,
+                                                @PathVariable Long userId,
+                                                @Valid @RequestBody UpdateGridRequest request) {
+        return ApiResponse.ok(userService.updateGrid(principal, userId, request), "격자 설정이 변경되었습니다.");
+    }
+
+    @Operation(tags = "AAC User Setup", summary = "Figma 11 음성 설정")
+    @PatchMapping("/{userId}/voice-settings")
+    public ApiResponse<UserResponse> updateVoice(@AuthenticationPrincipal OidcUser principal,
+                                                 @PathVariable Long userId,
+                                                 @Valid @RequestBody UpdateVoiceSettingsRequest request) {
+        return ApiResponse.ok(userService.updateVoice(principal, userId, request), "음성 설정이 변경되었습니다.");
+    }
+
+    @Operation(tags = "AAC User Setup", summary = "Figma 12 가입정보 확인")
+    @GetMapping("/{userId}/onboarding-summary")
+    public ApiResponse<OnboardingSummaryResponse> summary(@AuthenticationPrincipal OidcUser principal,
+                                                           @PathVariable Long userId) {
+        return ApiResponse.ok(userService.summary(principal, userId));
+    }
+
+    @Operation(tags = "AAC User Setup", summary = "AAC 사용자 설정 확정")
+    @PostMapping("/{userId}/onboarding/confirm")
+    public ApiResponse<OnboardingSummaryResponse> confirm(@AuthenticationPrincipal OidcUser principal,
+                                                           @PathVariable Long userId) {
+        return ApiResponse.ok(userService.confirm(principal, userId), "AAC 사용자 설정이 완료되었습니다.");
+    }
     @GetMapping("/{userId}/favorites")
     public ApiResponse<List<SymbolResponse>> findFavorites(@AuthenticationPrincipal OidcUser principal,
                                                            @PathVariable Long userId) {

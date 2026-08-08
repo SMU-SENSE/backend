@@ -54,6 +54,11 @@ public class GlobalExceptionHandler {
                 .body(ApiError.of("VALIDATION_ERROR", "요청값을 확인해주세요.", fieldErrors));
     }
 
+    @ExceptionHandler(GoneException.class)
+    public ResponseEntity<ApiError> handleGone(GoneException exception) {
+        return ResponseEntity.status(HttpStatus.GONE)
+                .body(ApiError.of("GONE", exception.getMessage()));
+    }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnexpected(Exception exception) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

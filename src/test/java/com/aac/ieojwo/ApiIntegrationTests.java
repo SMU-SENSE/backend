@@ -250,6 +250,9 @@ class ApiIntegrationTests {
     private String userBody(String name) throws Exception {
         return objectMapper.writeValueAsString(Map.of(
                 "name", name,
+                "birthDate", "2012-01-15",
+                "relationshipType", "PARENT",
+                "emergencyContact", "01012345678",
                 "mode", "SIMPLE",
                 "gridSize", "GRID_2X2"
         ));

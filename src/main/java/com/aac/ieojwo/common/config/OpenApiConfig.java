@@ -23,6 +23,9 @@ public class OpenApiConfig {
                 .tags(List.of(
                         new Tag().name("Auth"),
                         new Tag().name("AAC Users"),
+                        new Tag().name("AAC User Setup"),
+                        new Tag().name("Device Pairing"),
+                        new Tag().name("Devices"),
                         new Tag().name("Guardians"),
                         new Tag().name("Symbols"),
                         new Tag().name("Favorites"),

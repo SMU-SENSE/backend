@@ -2,47 +2,32 @@
 
 ## 완료
 
-- Google OIDC `sub` 기반 계정 생성/재로그인
-- 필수 약관 검증, 반복 온보딩 409, Account-Guardian 1:1 연결
-- AAC 사용자 생성 시 PRIMARY Guardian 자동 연결
-- 사용자 상세/설정/보호자/즐겨찾기/사용기록 소유권 검사
-- 권장 `/api/v1/me/aac-users/**` API와 기존 API 호환
-- JSON 401/403/404/409, 쿠키 CSRF, 제한된 CORS
-- Swagger/OpenAPI, PostgreSQL Flyway V1-V4
-- Docker Compose PostgreSQL 개발 환경과 PowerShell 실행 스크립트
-- H2 기본 테스트와 별도 Testcontainers PostgreSQL 통합 테스트
+- 기존 Google OIDC/세션/CSRF 및 Guardian 기반 AAC 사용자 소유권 검사
+- Figma 09 프로필 필드와 보호자별 관계 저장
+- Figma 10 격자, 11 TTS 설정, 12 가입정보 summary/확정
+- AAC 사용자 진행 단계 복구(`PROFILE_COMPLETED`~`CONFIRMED`)
+- QR payload와 6자리 코드를 함께 발급하는 10분 pairing session
+- refresh 무효화, USED 재사용 방지, 404/409/410 구분
+- 여러 AAC Device 연결 및 목록 조회
+- Flyway V5, Swagger 태그, H2 통합 테스트
 
-## 실제 검증
+## 검증 결과
 
-- `postgres:16.14-alpine` Compose 컨테이너 healthcheck 성공
-- 빈 실제 PostgreSQL 16.14에서 Flyway V1-V4 순차 적용 성공
-- 실제 PostgreSQL에서 Hibernate `ddl-auto=validate`와 Spring Context 로딩 성공
-- PostgreSQL IT 1개에서 Account/OAuth/Guardian/AAC 사용자/연결/상징/즐겨찾기/사용기록 CRUD 성공
-- OAuth subject, Account-Guardian, User-Guardian, 즐겨찾기 unique 제약 및 FK 실패 검증 성공
-- 사용기록 `SELECT`, `CANCEL`, `SPEAK` 문자열 저장 검증 성공
-- Health, OpenAPI, Swagger UI 각각 HTTP 200
-- DB와 서버 재시작 뒤 Flyway v4 및 스모크 마커 데이터 유지 확인
-- 기본 H2 테스트는 Docker와 분리해 유지
+- `mvnw test`: 14 tests 성공
+- `mvnw clean test`: OneDrive의 `target/classes` 잠금으로 clean 단계 실패(테스트 진입 전)
+- H2 Flyway V1~V5 및 Hibernate validate 성공
+- `mvnw -Ppostgres-it verify`: Docker 엔진 미가동으로 컨테이너 시작 전 실패(코드 컴파일 성공, PostgreSQL 실행 검증 미완료)
 
-## 미검증
+## 미구현 / 다음 Phase
 
-- 실제 Google 계정 브라우저 로그인
-- 실제 프론트엔드 CORS/쿠키/CSRF 통합
-- 운영 HTTPS Secure 쿠키와 운영 배포 환경
-- 장시간 부하, 장애 복구, 백업/복원
+- 이메일 회원가입·인증·로그인, 비밀번호 재설정
+- 카카오 OAuth, 실제 Google OAuth 브라우저 검증
+- 이미지 업로드/S3와 실제 TTS 생성
+- 운영용 pairing rate limit, 부하/경합 검증
+- AI/IoT/긴급 알림/배포
 
 ## 알려진 제한
 
-- 전역 Guardian/상징 쓰기 API는 별도 관리자 권한이 아직 없습니다.
-- 한 AAC 사용자에 두 번째 PRIMARY Guardian을 막는 제약은 아직 없습니다.
-- FK 삭제 정책은 모두 `NO ACTION`이며 명시적 삭제 흐름은 별도 검증이 필요합니다.
-- OneDrive 파일 잠금으로 Maven `clean`이 간헐적으로 `target` 삭제에 실패할 수 있습니다.
-- AI, IoT, WebSocket, FCM, 배포는 범위 밖입니다.
-
-## 다음 작업
-
-1. 실제 Google 자격 증명으로 수동 로그인/로그아웃 검증
-2. 프론트엔드의 권장 API, 세션, CSRF 통합 검증
-3. 관리자 역할과 전역 쓰기 API 분리
-4. Guardian 초대/수락 모델과 단일 PRIMARY 정책
-5. 운영용 비밀 관리, 백업/복원, 배포 프로필 설계
+- 전역 Guardian/상징 쓰기 API의 관리자 역할 분리가 필요하다.
+- 한 AAC 사용자에 여러 ACTIVE 기기를 허용하며 제품 정책 확정이 필요하다.
+- OneDrive 파일 잠금으로 Maven `clean`이 간헐적으로 target 삭제에 실패할 수 있다.
