@@ -5,6 +5,9 @@ import com.aac.ieojwo.auth.dto.OnboardingRequest;
 import com.aac.ieojwo.auth.service.AuthService;
 import com.aac.ieojwo.device.repository.AacDeviceRepository;
 import com.aac.ieojwo.guardian.repository.UserGuardianRepository;
+import com.aac.ieojwo.notification.repository.GuardianNotificationRepository;
+import com.aac.ieojwo.symbol.domain.Symbol;
+import com.aac.ieojwo.symbol.repository.SymbolRepository;
 import com.fasterxml.jackson.databind.*;
 import org.junit.jupiter.api.Test;
 import jakarta.persistence.EntityManager;
@@ -26,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest @AutoConfigureMockMvc @Transactional
 class OnboardingAndPairingIntegrationTests {
- @Autowired MockMvc mvc; @Autowired ObjectMapper json; @Autowired EntityManager entityManager; @Autowired AuthService auth; @Autowired UserGuardianRepository links; @Autowired AacDeviceRepository devices; @Autowired JdbcTemplate jdbc;
+ @Autowired MockMvc mvc; @Autowired ObjectMapper json; @Autowired EntityManager entityManager; @Autowired AuthService auth; @Autowired UserGuardianRepository links; @Autowired AacDeviceRepository devices; @Autowired JdbcTemplate jdbc; @Autowired SymbolRepository symbols; @Autowired GuardianNotificationRepository notifications;
  @Test void profileValidationAndRelationshipArePersisted() throws Exception {
   onboard("profile","profile@example.com");
   Map<String,Object> missingBirth=new HashMap<>();missingBirth.put("name","민수");missingBirth.put("relationshipType","PARENT");missingBirth.put("emergencyContact","01012345678");
@@ -56,6 +59,20 @@ class OnboardingAndPairingIntegrationTests {
   JsonNode issued=issue("owner",id,"/device-pairings");String token=token(issued);jdbc.update("update device_pairing_sessions set expires_at=? where id=?",java.sql.Timestamp.from(Instant.now().minusSeconds(1)),issued.path("pairingId").asLong());entityManager.clear();claimQr(token,"expired").andExpect(status().isGone());entityManager.flush();assertThat(jdbc.queryForObject("select status from device_pairing_sessions where id=?",String.class,issued.path("pairingId").asLong())).isEqualTo("EXPIRED");
   claimCode("999999","unknown").andExpect(status().isNotFound());JsonNode fresh=issue("owner",id,"/device-pairings");claimQr(token(fresh),"qr-device").andExpect(status().isOk());
  }
+ @Test void emergencySpeakNotifiesGuardianButOtherActionsDoNot() throws Exception {
+  onboard("notify","notify@example.com");long id=create("notify",Map.of());
+  Symbol emergency=symbols.findAllByEmergencyTrueAndActiveTrueOrderByDisplayOrderAscIdAsc().get(0);
+  Symbol normal=symbols.findAllByActiveTrueOrderByDisplayOrderAscIdAsc().stream().filter(s->!s.isEmergency()).findFirst().orElseThrow();
+  speak(id,"notify",normal.getId(),"SPEAK");assertThat(notifications.count()).isZero();
+  speak(id,"notify",emergency.getId(),"SELECT");assertThat(notifications.count()).isZero();
+  speak(id,"notify",emergency.getId(),"SPEAK");assertThat(notifications.count()).isEqualTo(1);
+  mvc.perform(get("/api/v1/me/notifications").with(oidcLogin().idToken(t->t.subject("notify")))).andExpect(status().isOk()).andExpect(jsonPath("$.data[0].read").value(false)).andExpect(jsonPath("$.data[0].aacUserId").value(id));
+  long notificationId=notifications.findAll().get(0).getId();
+  mvc.perform(patch("/api/v1/me/notifications/{nid}/read",notificationId).with(oidcLogin().idToken(t->t.subject("notify"))).with(csrf())).andExpect(status().isOk());
+  assertThat(notifications.findById(notificationId)).get().extracting(n->n.isRead()).isEqualTo(true);
+  mvc.perform(post("/api/v1/me/push-token").with(oidcLogin().idToken(t->t.subject("notify"))).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of("token","test-device-token")))).andExpect(status().isOk());
+ }
+ private void speak(long id,String sub,Long symbolId,String action)throws Exception{mvc.perform(post("/api/v1/me/aac-users/{id}/usage-logs",id).with(oidcLogin().idToken(t->t.subject(sub))).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of("symbolId",symbolId,"action",action)))).andExpect(status().isCreated());}
  private JsonNode issue(String sub,long id,String suffix)throws Exception{return json.readTree(mvc.perform(post("/api/v1/me/aac-users/{id}"+suffix,id).with(oidcLogin().idToken(t->t.subject(sub))).with(csrf())).andExpect(status().is2xxSuccessful()).andReturn().getResponse().getContentAsString()).path("data");}
  private String token(JsonNode n){String p=n.path("qrPayload").asText();return p.substring(p.indexOf("token=")+6);}
  private org.springframework.test.web.servlet.ResultActions claimQr(String token,String device)throws Exception{return mvc.perform(post("/api/v1/device-pairings/claim/qr").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of("token",token,"deviceId",device,"deviceType","TABLET"))));}

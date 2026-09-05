@@ -99,3 +99,13 @@ AAC 사용자 생성 요청:
 | 06-B / 07-B | claim 응답 `410 Gone` | 만료 세션을 없는 자격 증명(404)과 구분 |
 
 claim은 `deviceId`, 선택 `deviceName`, `deviceType`(`TABLET`, `MOBILE`, `WEB`, `UNKNOWN`)을 받습니다. 성공 응답은 `aacUserId`, `deviceId`, `pairedAt`만 반환합니다. 사용됨/취소됨은 409, 만료는 410, 미존재는 404, 형식 오류는 400입니다. claim 두 경로만 인증과 CSRF 예외이며, 발급·조회·기기 목록에는 기존 세션 인증과 AAC 사용자 소유권 검사가 적용됩니다.
+
+## 보호자 알림 (긴급 상징 알람)
+
+| API | 설명 |
+|---|---|
+| `GET /api/v1/me/notifications` | 로그인한 보호자에게 온 알림 목록, 최신순 |
+| `PATCH /api/v1/me/notifications/{id}/read` | 알림 확인 처리. 본인 알림이 아니면 403 |
+| `POST /api/v1/me/push-token` | 보호자 계정에 FCM 디바이스 토큰 등록(1개, 최신 값으로 교체) |
+
+`POST .../usage-logs`에 `action=SPEAK`이고 상징이 `emergency=true`이면, 해당 AAC 사용자와 연결된 모든 보호자에게 `guardian_notifications` 행이 생성됩니다. 등록된 `pushToken`이 있으면 FCM 푸시도 best-effort로 함께 발송됩니다(발송 실패는 무시하고 DB 알림은 항상 남습니다). FCM은 `FIREBASE_CREDENTIALS_PATH` 환경변수(서비스 계정 JSON 경로)가 설정된 경우에만 동작하며, 미설정 시 인앱 알림만 저장됩니다.

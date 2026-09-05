@@ -9,6 +9,7 @@ import com.aac.ieojwo.aac.repository.SymbolUsageLogRepository;
 import com.aac.ieojwo.aac.repository.UserFavoriteSymbolRepository;
 import com.aac.ieojwo.common.exception.ConflictException;
 import com.aac.ieojwo.common.exception.ResourceNotFoundException;
+import com.aac.ieojwo.notification.service.NotificationService;
 import com.aac.ieojwo.symbol.domain.Symbol;
 import com.aac.ieojwo.symbol.dto.SymbolResponse;
 import com.aac.ieojwo.symbol.service.SymbolService;
@@ -32,14 +33,17 @@ public class AacUsageService {
     private final SymbolUsageLogRepository usageLogRepository;
     private final UserService userService;
     private final SymbolService symbolService;
+    private final NotificationService notificationService;
 
     public AacUsageService(UserFavoriteSymbolRepository favoriteRepository,
                            SymbolUsageLogRepository usageLogRepository,
-                           UserService userService, SymbolService symbolService) {
+                           UserService userService, SymbolService symbolService,
+                           NotificationService notificationService) {
         this.favoriteRepository = favoriteRepository;
         this.usageLogRepository = usageLogRepository;
         this.userService = userService;
         this.symbolService = symbolService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -75,7 +79,11 @@ public class AacUsageService {
         Symbol symbol = symbolService.getSymbol(request.symbolId());
         LocalDateTime occurredAt = request.occurredAt() == null ? LocalDateTime.now() : request.occurredAt();
         SymbolUsageLog log = SymbolUsageLog.create(user, symbol, request.action(), occurredAt);
-        return UsageLogResponse.from(usageLogRepository.save(log));
+        UsageLogResponse response = UsageLogResponse.from(usageLogRepository.save(log));
+        if (request.action() == UsageAction.SPEAK && symbol.isEmergency()) {
+            notificationService.notifyEmergencySymbolUsed(user, symbol);
+        }
+        return response;
     }
 
     public List<SymbolResponse> findRecentSymbols(OidcUser principal, Long userId, int limit) {

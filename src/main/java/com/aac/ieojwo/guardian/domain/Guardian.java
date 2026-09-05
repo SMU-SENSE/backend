@@ -25,6 +25,9 @@ public class Guardian extends BaseTimeEntity {
     @JoinColumn(name = "account_id", unique = true)
     private Account account;
 
+    @Column(length = 255)
+    private String pushToken;
+
     protected Guardian() {
     }
 
@@ -74,7 +77,15 @@ public class Guardian extends BaseTimeEntity {
         this.account = account;
     }
 
+    public void updatePushToken(String pushToken) {
+        this.pushToken = pushToken;
+    }
+
     public Account getAccount() {
         return account;
+    }
+
+    public String getPushToken() {
+        return pushToken;
     }
 }

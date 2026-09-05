@@ -45,6 +45,8 @@ app:
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
   pairing:
     qr-prefix: ${PAIRING_QR_PREFIX:malmoa://pair?token=}
+  fcm:
+    credentials-path: ${FIREBASE_CREDENTIALS_PATH:}
 
 springdoc:
   api-docs:
