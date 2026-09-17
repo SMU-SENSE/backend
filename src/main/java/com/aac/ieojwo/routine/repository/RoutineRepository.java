@@ -1,0 +1,1 @@
+package com.aac.ieojwo.routine.repository;import com.aac.ieojwo.routine.domain.Routine;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;public interface RoutineRepository extends JpaRepository<Routine,Long>{List<Routine> findAllByUserIdOrderByTimeOfDayAsc(Long id);List<Routine> findAllByEnabledTrue();}

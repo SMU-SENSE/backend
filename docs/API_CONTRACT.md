@@ -98,4 +98,4 @@ AAC 사용자 생성 요청:
 | 연결 기기 | `GET /api/v1/me/aac-users/{id}/devices` | 현재 보호자가 접근 가능한 사용자의 기기 목록 |
 | 06-B / 07-B | claim 응답 `410 Gone` | 만료 세션을 없는 자격 증명(404)과 구분 |
 
-claim은 `deviceId`, 선택 `deviceName`, `deviceType`(`TABLET`, `MOBILE`, `WEB`, `UNKNOWN`)을 받습니다. 성공 응답은 `aacUserId`, `deviceId`, `pairedAt`만 반환합니다. 사용됨/취소됨은 409, 만료는 410, 미존재는 404, 형식 오류는 400입니다. claim 두 경로만 인증과 CSRF 예외이며, 발급·조회·기기 목록에는 기존 세션 인증과 AAC 사용자 소유권 검사가 적용됩니다.
+claim은 `deviceId`, 선택 `deviceName`, `deviceType`(`TABLET`, `MOBILE`, `WEB`, `UNKNOWN`)을 받습니다. 성공 응답은 `aacUserId`, `deviceId`, `pairedAt`, 이후 사용자 기기 API에서 사용할 `accessToken`, `accessTokenExpiresAt`을 반환합니다. 사용됨/취소됨은 409, 만료는 410, 미존재는 404, 형식 오류는 400입니다. claim 두 경로만 인증과 CSRF 예외이며, 발급·조회·기기 목록에는 기존 세션 인증과 AAC 사용자 소유권 검사가 적용됩니다. 전체 보호자 라이브 AAC 계약은 [GUARDIAN_LIVE_FEATURES.md](GUARDIAN_LIVE_FEATURES.md)를 참고합니다.

@@ -15,4 +15,5 @@ public class GuardianDevicePairingController {
  @PostMapping("/device-pairings/refresh") public ApiResponse<PairingResponse> refresh(@AuthenticationPrincipal OidcUser p,@PathVariable Long userId){return ApiResponse.ok(service.issue(p,userId),"기기 연결 세션이 재발급되었습니다.");}
  @GetMapping("/device-pairings/current") public ApiResponse<CurrentPairingResponse> current(@AuthenticationPrincipal OidcUser p,@PathVariable Long userId){return ApiResponse.ok(service.current(p,userId));}
  @GetMapping("/devices") @Tag(name="Devices") public ApiResponse<List<DeviceResponse>> devices(@AuthenticationPrincipal OidcUser p,@PathVariable Long userId){return ApiResponse.ok(service.devices(p,userId));}
+ @DeleteMapping("/devices/{deviceId}") @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT) public void revoke(@AuthenticationPrincipal OidcUser p,@PathVariable Long userId,@PathVariable Long deviceId){service.revokeDevice(p,userId,deviceId);}
 }

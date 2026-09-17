@@ -1,0 +1,32 @@
+package com.aac.ieojwo;
+
+import com.aac.ieojwo.account.domain.AccountType;import com.aac.ieojwo.auth.dto.OnboardingRequest;import com.aac.ieojwo.auth.service.AuthService;import com.fasterxml.jackson.databind.*;import org.junit.jupiter.api.Test;import org.springframework.beans.factory.annotation.Autowired;import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;import org.springframework.boot.test.context.SpringBootTest;import org.springframework.http.MediaType;import org.springframework.security.oauth2.core.oidc.*;import org.springframework.security.oauth2.core.oidc.user.*;import org.springframework.test.web.servlet.MockMvc;import org.springframework.transaction.annotation.Transactional;import java.time.Instant;import java.util.*;import static org.assertj.core.api.Assertions.assertThat;import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@SpringBootTest @AutoConfigureMockMvc @Transactional
+class GuardianLiveFeaturesIntegrationTests{
+ @Autowired MockMvc mvc;@Autowired ObjectMapper json;@Autowired AuthService auth;
+ @Test void guardianBoardDeviceTelemetryAndReportFlow()throws Exception{
+  onboard();long userId=createUser();
+  mvc.perform(get("/api/v1/me/tutorial").with(login())).andExpect(status().isOk()).andExpect(jsonPath("$.data.completed").value(false));
+  mvc.perform(post("/api/v1/me/tutorial/complete").with(login()).with(csrf())).andExpect(status().isOk()).andExpect(jsonPath("$.data.completed").value(true));
+  mvc.perform(patch("/api/v1/me/aac-users/{id}/sentence-level",userId).with(login()).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"level\":4}")).andExpect(status().isOk()).andExpect(jsonPath("$.data.sentenceLevel").value(4));
+  mvc.perform(patch("/api/v1/me/aac-users/{id}/voice-settings",userId).with(login()).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"voiceType\":\"ADULT_FEMALE\",\"speechRate\":1.1}")).andExpect(status().isOk()).andExpect(jsonPath("$.data.voiceType").value("ADULT_FEMALE"));
+  JsonNode board=data(mvc.perform(get("/api/v1/me/aac-users/{id}/board",userId).with(login())).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());assertThat(board.path("cards").size()).isGreaterThan(0);long cardId=board.path("cards").get(0).path("id").asLong();
+  mvc.perform(patch("/api/v1/me/aac-users/{id}/board/cards/{cardId}/favorite",userId,cardId).with(login()).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"favorite\":true}")).andExpect(status().isOk()).andExpect(jsonPath("$.data.favorite").value(true));
+  JsonNode pairing=data(mvc.perform(post("/api/v1/me/aac-users/{id}/device-pairings",userId).with(login()).with(csrf())).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());String code=pairing.path("inviteCode").asText();
+  JsonNode claim=data(mvc.perform(post("/api/v1/device-pairings/claim/code").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of("code",code,"deviceId","live-device","deviceType","TABLET")))).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());String token=claim.path("accessToken").asText();assertThat(token).isNotBlank();
+  mvc.perform(get("/api/v1/device/board").header("Authorization","Bearer "+token)).andExpect(status().isOk()).andExpect(jsonPath("$.data.aacUserId").value(userId));
+  mvc.perform(post("/api/v1/device/card-usage").header("Authorization","Bearer "+token).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of("cardId",cardId,"action","SELECT")))).andExpect(status().isOk());
+  mvc.perform(post("/api/v1/device/locations").header("Authorization","Bearer "+token).contentType(MediaType.APPLICATION_JSON).content("{\"latitude\":37.5665,\"longitude\":126.9780,\"accuracyMeters\":10}")).andExpect(status().isOk());
+  mvc.perform(post("/api/v1/device/sensor-events").header("Authorization","Bearer "+token).contentType(MediaType.APPLICATION_JSON).content("{\"type\":\"HEART_RATE\",\"numericValue\":118}")).andExpect(status().isOk());
+  mvc.perform(post("/api/v1/device/emergency").header("Authorization","Bearer "+token).contentType(MediaType.APPLICATION_JSON).content("{\"message\":\"도움이 필요해요\"}")).andExpect(status().isOk());
+  String from=Instant.now().minusSeconds(60).toString(),to=Instant.now().plusSeconds(60).toString();
+  mvc.perform(get("/api/v1/me/aac-users/{id}/report",userId).param("from",from).param("to",to).with(login())).andExpect(status().isOk()).andExpect(jsonPath("$.data.totalCardActions").value(1)).andExpect(jsonPath("$.data.emergencyCount").value(1)).andExpect(jsonPath("$.data.sensors[0].value").value(118.0));
+  mvc.perform(get("/api/v1/me/aac-users/{id}/locations/latest",userId).with(login())).andExpect(status().isOk()).andExpect(jsonPath("$.data.latitude").value(37.5665));
+ }
+ private long createUser()throws Exception{return data(mvc.perform(post("/api/v1/me/aac-users").with(login()).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"민수\",\"birthDate\":\"2012-01-15\",\"relationshipType\":\"PARENT\",\"emergencyContact\":\"01012345678\"}")).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString()).path("id").asLong();}
+ private JsonNode data(String body)throws Exception{return json.readTree(body).path("data");}
+ private void onboard(){auth.upsertGoogleAccount("live","live@example.com","보호자",null);auth.completeOnboarding(principal(),new OnboardingRequest(AccountType.GUARDIAN,true,true,false,"01012345678"));}
+ private OidcUser principal(){Instant now=Instant.now();OidcIdToken token=new OidcIdToken("token",now,now.plusSeconds(300),Map.of("sub","live","email","live@example.com"));return new DefaultOidcUser(List.of(),token,OidcUserInfo.builder().subject("live").email("live@example.com").build());}
+ private org.springframework.test.web.servlet.request.RequestPostProcessor login(){return oidcLogin().idToken(t->t.subject("live").claim("email","live@example.com"));}
+}

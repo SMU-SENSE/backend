@@ -10,6 +10,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -36,5 +38,12 @@ public class AuthController {
                                                    @Valid @RequestBody OnboardingRequest request) {
         return ApiResponse.ok(authService.completeOnboarding(principal, request),
                 "최초 설정이 완료되었습니다.");
+    }
+
+    @DeleteMapping("/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void withdraw(@AuthenticationPrincipal OidcUser principal, HttpServletRequest request) {
+        authService.withdraw(principal);
+        if (request.getSession(false) != null) request.getSession(false).invalidate();
     }
 }

@@ -60,6 +60,9 @@ public class AuthService {
     }
 
     @Transactional
+    public void withdraw(OidcUser principal) { currentAccountService.requireGoogleAccount(principal).withdraw(); }
+
+    @Transactional
     public AccountResponse completeOnboarding(OidcUser principal, OnboardingRequest request) {
         if (!request.termsOfServiceAgreed()) {
             throw new BadRequestException("서비스 이용약관에 동의해야 합니다.");

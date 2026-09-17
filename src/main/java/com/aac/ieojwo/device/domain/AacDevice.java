@@ -16,5 +16,7 @@ public class AacDevice extends BaseTimeEntity {
  protected AacDevice(){}
  public static AacDevice create(AacUser u,String id,String name,DeviceType type,Instant now){AacDevice d=new AacDevice();d.reconnect(u,name,type,now);d.deviceId=id;return d;}
  public void reconnect(AacUser u,String name,DeviceType type,Instant now){user=u;deviceName=name==null||name.isBlank()?null:name.trim();deviceType=type;status=DeviceStatus.ACTIVE;pairedAt=now;lastSeenAt=now;}
+ public void heartbeat(Instant now){lastSeenAt=now;}
+ public void revoke(){status=DeviceStatus.REVOKED;}
  public Long getId(){return id;} public AacUser getUser(){return user;} public String getDeviceId(){return deviceId;} public String getDeviceName(){return deviceName;} public DeviceType getDeviceType(){return deviceType;} public DeviceStatus getStatus(){return status;} public Instant getPairedAt(){return pairedAt;} public Instant getLastSeenAt(){return lastSeenAt;}
 }

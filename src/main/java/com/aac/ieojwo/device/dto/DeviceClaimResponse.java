@@ -1,3 +1,3 @@
 package com.aac.ieojwo.device.dto;
 import java.time.Instant;
-public record DeviceClaimResponse(Long aacUserId,String deviceId,Instant pairedAt){}
+public record DeviceClaimResponse(Long aacUserId,String deviceId,Instant pairedAt,String accessToken,Instant accessTokenExpiresAt){}

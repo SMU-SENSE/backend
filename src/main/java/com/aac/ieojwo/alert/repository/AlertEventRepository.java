@@ -1,0 +1,1 @@
+package com.aac.ieojwo.alert.repository;import com.aac.ieojwo.alert.domain.AlertEvent;import org.springframework.data.jpa.repository.JpaRepository;import java.time.Instant;import java.util.*;public interface AlertEventRepository extends JpaRepository<AlertEvent,Long>{List<AlertEvent> findAllByUserIdAndOccurredAtBetweenOrderByOccurredAtDesc(Long id,Instant from,Instant to);}

@@ -57,6 +57,8 @@ public class Account extends BaseTimeEntity {
         this.onboardingCompleted = true;
     }
 
+    public void withdraw() { this.status = AccountStatus.WITHDRAWN; }
+
     public Long getId() { return id; }
     public String getEmail() { return email; }
     public String getName() { return name; }

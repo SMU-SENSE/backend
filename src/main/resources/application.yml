@@ -45,6 +45,8 @@ app:
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
   pairing:
     qr-prefix: ${PAIRING_QR_PREFIX:malmoa://pair?token=}
+  media:
+    upload-dir: ${MEDIA_UPLOAD_DIR:./uploads}
 
 springdoc:
   api-docs:

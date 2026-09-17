@@ -3,6 +3,7 @@ package com.aac.ieojwo.guardian.domain;
 import com.aac.ieojwo.account.domain.Account;
 import com.aac.ieojwo.common.domain.BaseTimeEntity;
 import jakarta.persistence.*;
+import java.time.Instant;
 
 @Entity
 @Table(name = "guardians")
@@ -25,6 +26,11 @@ public class Guardian extends BaseTimeEntity {
     @JoinColumn(name = "account_id", unique = true)
     private Account account;
 
+    @Column(nullable = false)
+    private int tutorialVersion;
+
+    private Instant tutorialCompletedAt;
+
     protected Guardian() {
     }
 
@@ -32,6 +38,7 @@ public class Guardian extends BaseTimeEntity {
         this.name = name;
         this.email = email;
         this.phone = phone;
+        this.tutorialVersion = 0;
     }
 
     private Guardian(Account account, String name, String email, String phone) {
@@ -39,6 +46,7 @@ public class Guardian extends BaseTimeEntity {
         this.name = name;
         this.email = email;
         this.phone = phone;
+        this.tutorialVersion = 0;
     }
 
     public static Guardian create(String name, String email, String phone) {
@@ -77,4 +85,12 @@ public class Guardian extends BaseTimeEntity {
     public Account getAccount() {
         return account;
     }
+
+    public void completeTutorial(int version, Instant completedAt) {
+        this.tutorialVersion = version;
+        this.tutorialCompletedAt = completedAt;
+    }
+
+    public int getTutorialVersion() { return tutorialVersion; }
+    public Instant getTutorialCompletedAt() { return tutorialCompletedAt; }
 }

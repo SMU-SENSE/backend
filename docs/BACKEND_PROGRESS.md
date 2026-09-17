@@ -10,21 +10,28 @@
 - refresh 무효화, USED 재사용 방지, 404/409/410 구분
 - 여러 AAC Device 연결 및 목록 조회
 - Flyway V5, Swagger 태그, H2 통합 테스트
+- 보호자용 라이브 AAC Phase: 사용자별 판/카드/카테고리 편집, SSE 동기화
+- 보호자 튜토리얼, 문장 이해 수준 1~4, 성인 음성 옵션
+- 기기 전용 토큰, heartbeat, 카드 사용·위치·센서·긴급 이벤트 수집
+- 장소/안심존, 루틴 스케줄러, 알림 이력, Push 구독 저장
+- 보호자 리포트 집계/PDF, 인증 이미지 업로드, 회원 탈퇴
 
 ## 검증 결과
 
-- `mvnw test`: 14 tests 성공
+- `mvnw test`: 15 tests 성공
 - `mvnw clean test`: OneDrive의 `target/classes` 잠금으로 clean 단계 실패(테스트 진입 전)
 - H2 Flyway V1~V5 및 Hibernate validate 성공
 - `mvnw -Ppostgres-it verify`: Docker 엔진 미가동으로 컨테이너 시작 전 실패(코드 컴파일 성공, PostgreSQL 실행 검증 미완료)
 
-## 미구현 / 다음 Phase
+## 외부 연동 / 다음 Phase
 
 - 이메일 회원가입·인증·로그인, 비밀번호 재설정
 - 카카오 OAuth, 실제 Google OAuth 브라우저 검증
-- 이미지 업로드/S3와 실제 TTS 생성
+- 운영 S3/Cloud Storage와 실제 TTS 공급자 연결
+- VAPID/FCM/APNs Web Push 발송 어댑터 연결
+- Map API 주소 검색 및 지도 UI 연결
 - 운영용 pairing rate limit, 부하/경합 검증
-- AI/IoT/긴급 알림/배포
+- 문장 수준을 사용하는 실제 AI 추천 엔진, IoT 장치, 배포
 
 ## 알려진 제한
 

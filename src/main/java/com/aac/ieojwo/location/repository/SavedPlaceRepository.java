@@ -1,0 +1,1 @@
+package com.aac.ieojwo.location.repository;import com.aac.ieojwo.location.domain.SavedPlace;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;public interface SavedPlaceRepository extends JpaRepository<SavedPlace,Long>{List<SavedPlace> findAllByUserIdAndActiveTrueOrderByIdAsc(Long id);}

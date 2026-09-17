@@ -21,6 +21,9 @@ public class AacUser extends BaseTimeEntity {
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 30) private VoiceType voiceType;
     @Column(nullable = false, precision = 3, scale = 2) private BigDecimal speechRate;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 30) private AacUserSetupStep setupStep;
+    @Column(nullable = false) private int sentenceLevel;
+    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private UserStatus status;
+    @Column(nullable = false) private long boardVersion;
 
     protected AacUser() {}
 
@@ -32,6 +35,9 @@ public class AacUser extends BaseTimeEntity {
         this.voiceType = VoiceType.CHILD_MALE;
         this.speechRate = new BigDecimal("1.00");
         this.setupStep = AacUserSetupStep.PROFILE_COMPLETED;
+        this.sentenceLevel = 2;
+        this.status = UserStatus.STABLE;
+        this.boardVersion = 0;
     }
 
     public static AacUser create(String name, UserMode mode, GridSize gridSize) {
@@ -54,6 +60,9 @@ public class AacUser extends BaseTimeEntity {
     public void updateGrid(GridSize gridSize) { this.gridSize = gridSize; advanceTo(AacUserSetupStep.GRID_COMPLETED); }
     public void updateVoiceSettings(VoiceType voiceType, BigDecimal speechRate) { this.voiceType = voiceType; this.speechRate = speechRate; advanceTo(AacUserSetupStep.VOICE_COMPLETED); }
     public void confirmSetup() { this.setupStep = AacUserSetupStep.CONFIRMED; }
+    public void updateSentenceLevel(int sentenceLevel) { this.sentenceLevel = sentenceLevel; }
+    public void updateStatus(UserStatus status) { this.status = status; }
+    public void incrementBoardVersion() { this.boardVersion++; }
     private void advanceTo(AacUserSetupStep next) { if (setupStep.ordinal() < next.ordinal()) setupStep = next; }
 
     public Long getId() { return id; }
@@ -68,4 +77,7 @@ public class AacUser extends BaseTimeEntity {
     public VoiceType getVoiceType() { return voiceType; }
     public BigDecimal getSpeechRate() { return speechRate; }
     public AacUserSetupStep getSetupStep() { return setupStep; }
+    public int getSentenceLevel() { return sentenceLevel; }
+    public UserStatus getStatus() { return status; }
+    public long getBoardVersion() { return boardVersion; }
 }
