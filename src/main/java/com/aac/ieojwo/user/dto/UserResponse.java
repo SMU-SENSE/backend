@@ -8,12 +8,18 @@ import java.time.LocalDateTime;
 public record UserResponse(Long id, String name, UserMode mode, GridSize gridSize, boolean active,
                            LocalDate birthDate, String emergencyContact, String notes, String profileImageUrl,
                            VoiceType voiceType, BigDecimal speechRate, AacUserSetupStep setupStep,
-                           int sentenceLevel, UserStatus status, long boardVersion,
+                           int sentenceLevel, int maxRecommendedSentenceWords,
+                           boolean easyWordsPreferred, boolean abstractExpressionsRestricted,
+                           boolean complexGrammarRestricted, boolean conciseDirectPreferred,
+                           UserStatus status, long boardVersion,
                            LocalDateTime createdAt, LocalDateTime updatedAt) {
     public static UserResponse from(AacUser user) {
         return new UserResponse(user.getId(), user.getName(), user.getMode(), user.getGridSize(), user.isActive(),
                 user.getBirthDate(), user.getEmergencyContact(), user.getNotes(), user.getProfileImageUrl(),
-                user.getVoiceType(), user.getSpeechRate(), user.getSetupStep(), user.getSentenceLevel(), user.getStatus(),
+                user.getVoiceType(), user.getSpeechRate(), user.getSetupStep(), user.getSentenceLevel(),
+                user.getMaxRecommendedSentenceWords(), user.isEasyWordsPreferred(),
+                user.isAbstractExpressionsRestricted(), user.isComplexGrammarRestricted(),
+                user.isConciseDirectPreferred(), user.getStatus(),
                 user.getBoardVersion(), user.getCreatedAt(), user.getUpdatedAt());
     }
 }

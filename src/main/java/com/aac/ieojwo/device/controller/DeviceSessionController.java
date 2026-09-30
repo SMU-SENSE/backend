@@ -17,11 +17,11 @@ import java.util.Map;
 
 @RestController @RequestMapping("/api/v1/device")
 public class DeviceSessionController{
- public record CardUsageRequest(@NotNull Long cardId,@NotNull UsageAction action,Instant occurredAt){}
+ public record CardUsageRequest(Long cardId,@NotNull UsageAction action,String spokenText,Instant occurredAt){}
  private final DeviceAuthService auth;private final BoardService board;private final LiveEventService live;
  public DeviceSessionController(DeviceAuthService auth,BoardService board,LiveEventService live){this.auth=auth;this.board=board;this.live=live;}
  @PostMapping("/heartbeat") public ApiResponse<Map<String,Object>> heartbeat(@RequestHeader(value="Authorization",required=false)String token){AacDevice d=auth.authenticate(token);return ApiResponse.ok(Map.of("deviceId",d.getDeviceId(),"aacUserId",d.getUser().getId(),"lastSeenAt",d.getLastSeenAt()));}
  @GetMapping("/board") public ApiResponse<BoardResponse> board(@RequestHeader(value="Authorization",required=false)String token){AacDevice d=auth.authenticate(token);return ApiResponse.ok(board.getForDevice(d.getUser()));}
- @PostMapping("/card-usage") public ApiResponse<Map<String,Long>> usage(@RequestHeader(value="Authorization",required=false)String token,@Valid @RequestBody CardUsageRequest r){AacDevice d=auth.authenticate(token);return ApiResponse.ok(Map.of("id",board.recordUsage(d.getUser(),r.cardId(),r.action(),r.occurredAt())));}
+ @PostMapping("/card-usage") public ApiResponse<Map<String,Long>> usage(@RequestHeader(value="Authorization",required=false)String token,@Valid @RequestBody CardUsageRequest r){AacDevice d=auth.authenticate(token);return ApiResponse.ok(Map.of("id",board.recordUsage(d,r.cardId(),r.action(),r.spokenText(),r.occurredAt())));}
  @GetMapping(value="/events",produces=MediaType.TEXT_EVENT_STREAM_VALUE) public SseEmitter events(@RequestHeader(value="Authorization",required=false)String token){AacDevice d=auth.authenticate(token);return live.subscribe(d.getUser().getId());}
 }

@@ -22,6 +22,11 @@ public class AacUser extends BaseTimeEntity {
     @Column(nullable = false, precision = 3, scale = 2) private BigDecimal speechRate;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 30) private AacUserSetupStep setupStep;
     @Column(nullable = false) private int sentenceLevel;
+    @Column(nullable = false) private int maxRecommendedSentenceWords;
+    @Column(nullable = false) private boolean easyWordsPreferred;
+    @Column(nullable = false) private boolean abstractExpressionsRestricted;
+    @Column(nullable = false) private boolean complexGrammarRestricted;
+    @Column(nullable = false) private boolean conciseDirectPreferred;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private UserStatus status;
     @Column(nullable = false) private long boardVersion;
 
@@ -36,6 +41,11 @@ public class AacUser extends BaseTimeEntity {
         this.speechRate = new BigDecimal("1.00");
         this.setupStep = AacUserSetupStep.PROFILE_COMPLETED;
         this.sentenceLevel = 2;
+        this.maxRecommendedSentenceWords = 4;
+        this.easyWordsPreferred = true;
+        this.abstractExpressionsRestricted = true;
+        this.complexGrammarRestricted = true;
+        this.conciseDirectPreferred = true;
         this.status = UserStatus.STABLE;
         this.boardVersion = 0;
     }
@@ -61,6 +71,16 @@ public class AacUser extends BaseTimeEntity {
     public void updateVoiceSettings(VoiceType voiceType, BigDecimal speechRate) { this.voiceType = voiceType; this.speechRate = speechRate; advanceTo(AacUserSetupStep.VOICE_COMPLETED); }
     public void confirmSetup() { this.setupStep = AacUserSetupStep.CONFIRMED; }
     public void updateSentenceLevel(int sentenceLevel) { this.sentenceLevel = sentenceLevel; }
+    public void updateCommunicationProfile(Integer sentenceLevel, Integer maxRecommendedSentenceWords,
+                                           Boolean easyWordsPreferred, Boolean abstractExpressionsRestricted,
+                                           Boolean complexGrammarRestricted, Boolean conciseDirectPreferred) {
+        if (sentenceLevel != null) this.sentenceLevel = sentenceLevel;
+        if (maxRecommendedSentenceWords != null) this.maxRecommendedSentenceWords = maxRecommendedSentenceWords;
+        if (easyWordsPreferred != null) this.easyWordsPreferred = easyWordsPreferred;
+        if (abstractExpressionsRestricted != null) this.abstractExpressionsRestricted = abstractExpressionsRestricted;
+        if (complexGrammarRestricted != null) this.complexGrammarRestricted = complexGrammarRestricted;
+        if (conciseDirectPreferred != null) this.conciseDirectPreferred = conciseDirectPreferred;
+    }
     public void updateStatus(UserStatus status) { this.status = status; }
     public void incrementBoardVersion() { this.boardVersion++; }
     private void advanceTo(AacUserSetupStep next) { if (setupStep.ordinal() < next.ordinal()) setupStep = next; }
@@ -78,6 +98,11 @@ public class AacUser extends BaseTimeEntity {
     public BigDecimal getSpeechRate() { return speechRate; }
     public AacUserSetupStep getSetupStep() { return setupStep; }
     public int getSentenceLevel() { return sentenceLevel; }
+    public int getMaxRecommendedSentenceWords() { return maxRecommendedSentenceWords; }
+    public boolean isEasyWordsPreferred() { return easyWordsPreferred; }
+    public boolean isAbstractExpressionsRestricted() { return abstractExpressionsRestricted; }
+    public boolean isComplexGrammarRestricted() { return complexGrammarRestricted; }
+    public boolean isConciseDirectPreferred() { return conciseDirectPreferred; }
     public UserStatus getStatus() { return status; }
     public long getBoardVersion() { return boardVersion; }
 }

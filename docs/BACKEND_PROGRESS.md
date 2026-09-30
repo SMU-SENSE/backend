@@ -15,12 +15,16 @@
 - 기기 전용 토큰, heartbeat, 카드 사용·위치·센서·긴급 이벤트 수집
 - 장소/안심존, 루틴 스케줄러, 알림 이력, Push 구독 저장
 - 보호자 리포트 집계/PDF, 인증 이미지 업로드, 회원 탈퇴
+- 의사소통 세부 프로필, 표시 문구/TTS 문구 분리, 이미지 출처 메타데이터
+- 중요·즐겨찾기·빈도·최근 사용 기반 개인화 AAC 컨텍스트와 단일 문장 AI provider 계약
+- device token 기반 TTS/STT/표정 결과 기록과 설정형 이벤트 보존 정책
+- Flyway V7 및 개인화 AAC 통합 테스트
 
 ## 검증 결과
 
-- `mvnw test`: 15 tests 성공
+- `mvnw test`: 17 tests 성공
 - `mvnw clean test`: OneDrive의 `target/classes` 잠금으로 clean 단계 실패(테스트 진입 전)
-- H2 Flyway V1~V5 및 Hibernate validate 성공
+- H2 Flyway V1~V7 및 Hibernate validate 성공
 - `mvnw -Ppostgres-it verify`: Docker 엔진 미가동으로 컨테이너 시작 전 실패(코드 컴파일 성공, PostgreSQL 실행 검증 미완료)
 
 ## 외부 연동 / 다음 Phase
@@ -31,7 +35,7 @@
 - VAPID/FCM/APNs Web Push 발송 어댑터 연결
 - Map API 주소 검색 및 지도 UI 연결
 - 운영용 pairing rate limit, 부하/경합 검증
-- 문장 수준을 사용하는 실제 AI 추천 엔진, IoT 장치, 배포
+- `AacSentenceRecommendationProvider` 실제 LLM 구현, STT/TTS/표정 인식 엔진, IoT 장치, 배포
 
 ## 알려진 제한
 

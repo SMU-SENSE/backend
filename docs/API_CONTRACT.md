@@ -99,3 +99,16 @@ AAC 사용자 생성 요청:
 | 06-B / 07-B | claim 응답 `410 Gone` | 만료 세션을 없는 자격 증명(404)과 구분 |
 
 claim은 `deviceId`, 선택 `deviceName`, `deviceType`(`TABLET`, `MOBILE`, `WEB`, `UNKNOWN`)을 받습니다. 성공 응답은 `aacUserId`, `deviceId`, `pairedAt`, 이후 사용자 기기 API에서 사용할 `accessToken`, `accessTokenExpiresAt`을 반환합니다. 사용됨/취소됨은 409, 만료는 410, 미존재는 404, 형식 오류는 400입니다. claim 두 경로만 인증과 CSRF 예외이며, 발급·조회·기기 목록에는 기존 세션 인증과 AAC 사용자 소유권 검사가 적용됩니다. 전체 보호자 라이브 AAC 계약은 [GUARDIAN_LIVE_FEATURES.md](GUARDIAN_LIVE_FEATURES.md)를 참고합니다.
+
+## 개인화 AAC
+
+| API | 인증 | 설명 |
+|---|---|---|
+| `GET/PATCH /api/v1/me/aac-users/{id}/communication-profile` | Guardian session + CSRF(PATCH) | 문장 단계와 언어 단순화 설정 조회/수정 |
+| `GET /api/v1/me/aac-users/{id}/ai/context` | Guardian session | 개인 프로필·카드·즐겨찾기·중요 어휘·사용 이력 컨텍스트 |
+| `POST /api/v1/me/aac-users/{id}/ai/recommendations` | Guardian session + CSRF | provider 기반 단일 문장 응답. 미설정 시 503 |
+| `POST /api/v1/device/card-usage` | Device bearer token | 선택/취소 및 실제 TTS 발화 기록 |
+| `POST /api/v1/device/stt-events` | Device bearer token | STT 텍스트 결과만 기록, 원본 음성 제외 |
+| `POST /api/v1/device/expression-events` | Device bearer token | 표정 enum/confidence만 기록, 이미지·영상 제외 |
+
+카드의 기존 `text` 필드는 유지되며 `displayText`와 같은 값입니다. `ttsText`는 별도로 지정할 수 있고 미지정 시 표시 문구로 fallback합니다. 상세 계약과 보존 설정은 [PERSONALIZED_AAC.md](PERSONALIZED_AAC.md)를 참고합니다.

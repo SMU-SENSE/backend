@@ -59,6 +59,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.GONE)
                 .body(ApiError.of("GONE", exception.getMessage()));
     }
+
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ResponseEntity<ApiError> handleServiceUnavailable(ServiceUnavailableException exception) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiError.of("SERVICE_UNAVAILABLE", exception.getMessage()));
+    }
+
+    @ExceptionHandler(BadGatewayException.class)
+    public ResponseEntity<ApiError> handleBadGateway(BadGatewayException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ApiError.of("BAD_GATEWAY", exception.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnexpected(Exception exception) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
