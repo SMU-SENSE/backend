@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
@@ -27,7 +28,9 @@ public class SecurityConfig {
                                             OAuth2FailureHandler failureHandler,
                                             RestAuthenticationEntryPoint authenticationEntryPoint,
                                             RestAccessDeniedHandler accessDeniedHandler,
-                                            ObjectMapper objectMapper) throws Exception {
+                                            ObjectMapper objectMapper,
+                                            @Value("${app.observability.public-metrics:false}")
+                                            boolean publicMetrics) throws Exception {
         CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         csrfRepository.setCookiePath("/");
 
@@ -38,8 +41,9 @@ public class SecurityConfig {
                         .ignoringRequestMatchers("/h2-console/**", "/api/v1/device-pairings/claim/**", "/api/v1/device/**"))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers(
                                 "/api/v1/health",
                                 "/api/v1/auth/csrf",
@@ -52,9 +56,12 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/error"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
+                        ).permitAll();
+                    if (publicMetrics) {
+                        auth.requestMatchers("/actuator/metrics/**", "/actuator/prometheus").permitAll();
+                    }
+                    auth.anyRequest().authenticated();
+                })
                 .oauth2Login(oauth -> oauth
                         .userInfoEndpoint(userInfo -> userInfo.oidcUserService(customOidcUserService::loadUser))
                         .successHandler(successHandler)

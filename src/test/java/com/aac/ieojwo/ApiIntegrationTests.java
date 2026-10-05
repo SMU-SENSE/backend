@@ -52,6 +52,15 @@ class ApiIntegrationTests {
     void publicAndProtectedEndpointsHaveExpectedSecurity() throws Exception {
         mockMvc.perform(get("/api/v1/health"))
                 .andExpect(status().isOk());
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+        mockMvc.perform(get("/actuator/prometheus"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/actuator/prometheus").with(oidcLogin()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        "malmoa_sse_connections_active")));
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk());
         mockMvc.perform(get("/api/v1/auth/me"))

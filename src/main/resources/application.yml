@@ -47,6 +47,24 @@ app:
     qr-prefix: ${PAIRING_QR_PREFIX:malmoa://pair?token=}
   media:
     upload-dir: ${MEDIA_UPLOAD_DIR:./uploads}
+  observability:
+    public-metrics: ${PUBLIC_METRICS_ENABLED:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: never
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
 springdoc:
   api-docs:
