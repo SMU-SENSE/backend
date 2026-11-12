@@ -5,7 +5,8 @@ server:
     session:
       cookie:
         http-only: true
-        same-site: lax
+        # Local HTTP defaults to Lax; deployed cross-site OAuth uses None + Secure.
+        same-site: ${SESSION_COOKIE_SAME_SITE:lax}
         secure: ${SESSION_COOKIE_SECURE:false}
 
 spring:
