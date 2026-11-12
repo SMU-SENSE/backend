@@ -34,9 +34,19 @@ public class SecurityConfig {
                                             @Value("${app.observability.public-metrics:false}")
                                             boolean publicMetrics,
                                             @Value("${app.load-test.enabled:false}")
-                                            boolean loadTestEnabled) throws Exception {
+                                            boolean loadTestEnabled,
+                                            @Value("${server.servlet.session.cookie.same-site:lax}")
+                                            String sessionCookieSameSite,
+                                            @Value("${server.servlet.session.cookie.secure:false}")
+                                            boolean sessionCookieSecure) throws Exception {
         CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         csrfRepository.setCookiePath("/");
+        // Vercel -> Railway uses credentialed, cross-site requests. Keep the CSRF
+        // cookie policy aligned with JSESSIONID so mutations can be validated.
+        // CSRF protection stays enabled and the token remains mandatory.
+        csrfRepository.setCookieCustomizer(cookie -> cookie
+                .sameSite(sessionCookieSameSite)
+                .secure(sessionCookieSecure));
 
         http
                 .cors(Customizer.withDefaults())
