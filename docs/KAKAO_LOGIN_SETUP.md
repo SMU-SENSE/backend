@@ -18,13 +18,16 @@ At https://developers.kakao.com/ create/select a Kakao application:
 
 Keep Google login configured, and enable the Kakao profile using:
 
+The official Guardian frontend URL is `https://frontend-aac-0051.vercel.app`; a successful OAuth login should return to that origin. Update these variables in the **actual Railway service** as well as this guide. A GitHub documentation commit alone does not change Railway's live configuration.
+
 ```env
 SPRING_PROFILES_ACTIVE=postgres,kakao
 KAKAO_REST_API_KEY=<Kakao REST API key>
 KAKAO_CLIENT_SECRET=<Kakao Client Secret>
 GOOGLE_CLIENT_ID=<existing Google client ID>
 GOOGLE_CLIENT_SECRET=<existing Google client secret>
-FRONTEND_BASE_URL=https://frontend-pied-five-90.vercel.app
+FRONTEND_BASE_URL=https://frontend-aac-0051.vercel.app
+FRONTEND_ALLOWED_ORIGINS=https://frontend-aac-0051.vercel.app
 SESSION_COOKIE_SAME_SITE=none
 SESSION_COOKIE_SECURE=true
 # Existing production DB settings: DB_URL / DB_USERNAME / DB_PASSWORD
@@ -40,7 +43,7 @@ Use `SPRING_PROFILES_ACTIVE=kakao` only when using the local default H2 database
 - After successful login: redirect to `<FRONTEND_BASE_URL>/oauth/callback?login=success&onboardingCompleted=...`.
 - Then client calls credentialed `GET /api/v1/auth/me` and expects HTTP 200 with a session cookie.
 
-The guardian frontend's Kakao button is currently prototype-only and must be wired to the Kakao authorization endpoint **after** backend deployment and credential configuration.
+The guardian frontend's `feature/dongseok` Kakao button is wired to `/oauth2/authorization/kakao`. Deployment still requires Kakao credentials, the backend `kakao` profile and correct environment variables.
 
 ## 4. Account safety
 
