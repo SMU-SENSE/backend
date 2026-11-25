@@ -109,3 +109,21 @@ claim은 `deviceId`, 선택 `deviceName`, `deviceType`(`TABLET`, `MOBILE`, `WEB`
 | `POST /api/v1/me/push-token` | 보호자 계정에 FCM 디바이스 토큰 등록(1개, 최신 값으로 교체) |
 
 `POST .../usage-logs`에 `action=SPEAK`이고 상징이 `emergency=true`이면, 해당 AAC 사용자와 연결된 모든 보호자에게 `guardian_notifications` 행이 생성됩니다. 등록된 `pushToken`이 있으면 FCM 푸시도 best-effort로 함께 발송됩니다(발송 실패는 무시하고 DB 알림은 항상 남습니다). FCM은 `FIREBASE_CREDENTIALS_PATH` 환경변수(서비스 계정 JSON 경로)가 설정된 경우에만 동작하며, 미설정 시 인앱 알림만 저장됩니다.
+## 카드 추천 · 문장 변환
+
+상세와 명세 대비 차이는 `docs/progress_yji.md`, 원 명세는 `docs/AI_RECOMMENDATION_SPEC.md`를 본다. 다음 카드 추천 계산은 앱(기기)에서 하고, 서버는 모델 파일만 배포한다.
+
+| API | 설명 |
+|---|---|
+| `GET /api/v1/recommend-model/latest` | `{version, url}`. 앱은 version이 캐시와 다를 때만 url을 받는다 |
+| `GET /api/v1/recommend-model/files/{version}` | model.json 원본(ApiResponse로 감싸지 않음). 현재 버전이 아니면 404 |
+| `GET /api/v1/symbols` | 기본 카드 목록. 각 카드에 `cardCode`(model.json ID), `predict`(추천 후보 여부), `custom` 포함 |
+| `POST /api/v1/me/aac-users/{id}/custom-symbols` | `{categoryId, name, ttsText?, imageUrl?}` → `cardCode = ic_custom_<uuid>` |
+| `GET /api/v1/me/aac-users/{id}/custom-symbols` | 그 사용자의 커스텀 카드(삭제된 카드 제외) |
+| `DELETE /api/v1/me/aac-users/{id}/custom-symbols/{symbolId}` | 행은 남기고 비활성화(204) |
+| `POST /api/v1/me/aac-users/{id}/sentences` | `{cardCodes:[...], style: POLITE\|CASUAL}` → `{sentence, generated}`. LLM 실패 시 라벨 이어붙이기, `generated=false` |
+| `POST /api/v1/me/aac-users/{id}/utterance-logs` | `{cardCodes, converted, spoken, occurredAt?}`. 카드 묶음을 실제로 쓸 때 1건 |
+| `GET /api/v1/me/aac-users/{id}/utterance-logs?since=` | 개인 n-gram 복원용, 시간순 |
+
+- 카테고리 코드는 대문자(`FOOD`)이고 model.json의 `category` 키는 소문자(`food`)다. 비교할 때 소문자로 바꾼다.
+- 다른 사용자의 커스텀 카드는 문장 변환, 사용 기록, 즐겨찾기, `GET /symbols/{id}` 모두에서 404다.

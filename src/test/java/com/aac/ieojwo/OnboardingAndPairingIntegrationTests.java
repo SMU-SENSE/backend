@@ -61,8 +61,8 @@ class OnboardingAndPairingIntegrationTests {
  }
  @Test void emergencySpeakNotifiesGuardianButOtherActionsDoNot() throws Exception {
   onboard("notify","notify@example.com");long id=create("notify",Map.of());
-  Symbol emergency=symbols.findAllByEmergencyTrueAndActiveTrueOrderByDisplayOrderAscIdAsc().get(0);
-  Symbol normal=symbols.findAllByActiveTrueOrderByDisplayOrderAscIdAsc().stream().filter(s->!s.isEmergency()).findFirst().orElseThrow();
+  Symbol emergency=symbols.findAllByEmergencyTrueAndActiveTrueAndOwnerIsNullOrderByDisplayOrderAscIdAsc().get(0);
+  Symbol normal=symbols.findAllByActiveTrueAndOwnerIsNullOrderByDisplayOrderAscIdAsc().stream().filter(s->!s.isEmergency()).findFirst().orElseThrow();
   speak(id,"notify",normal.getId(),"SPEAK");assertThat(notifications.count()).isZero();
   speak(id,"notify",emergency.getId(),"SELECT");assertThat(notifications.count()).isZero();
   speak(id,"notify",emergency.getId(),"SPEAK");assertThat(notifications.count()).isEqualTo(1);

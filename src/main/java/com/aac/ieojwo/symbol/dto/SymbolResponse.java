@@ -4,6 +4,7 @@ import com.aac.ieojwo.symbol.domain.Symbol;
 
 public record SymbolResponse(
         Long id,
+        String cardCode,
         Long categoryId,
         String categoryCode,
         String categoryName,
@@ -12,11 +13,14 @@ public record SymbolResponse(
         String ttsText,
         boolean emergency,
         int displayOrder,
-        boolean active
+        boolean active,
+        boolean custom,
+        boolean predict
 ) {
     public static SymbolResponse from(Symbol symbol) {
         return new SymbolResponse(
                 symbol.getId(),
+                symbol.getCardCode(),
                 symbol.getCategory().getId(),
                 symbol.getCategory().getCode(),
                 symbol.getCategory().getName(),
@@ -25,7 +29,9 @@ public record SymbolResponse(
                 symbol.getTtsText(),
                 symbol.isEmergency(),
                 symbol.getDisplayOrder(),
-                symbol.isActive()
+                symbol.isActive(),
+                symbol.isCustom(),
+                symbol.isPredict()
         );
     }
 }

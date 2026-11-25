@@ -3,10 +3,14 @@ package com.aac.ieojwo.aac.service;
 import com.aac.ieojwo.aac.domain.SymbolUsageLog;
 import com.aac.ieojwo.aac.domain.UsageAction;
 import com.aac.ieojwo.aac.domain.UserFavoriteSymbol;
+import com.aac.ieojwo.aac.domain.UtteranceLog;
 import com.aac.ieojwo.aac.dto.CreateUsageLogRequest;
+import com.aac.ieojwo.aac.dto.CreateUtteranceLogRequest;
 import com.aac.ieojwo.aac.dto.UsageLogResponse;
+import com.aac.ieojwo.aac.dto.UtteranceLogResponse;
 import com.aac.ieojwo.aac.repository.SymbolUsageLogRepository;
 import com.aac.ieojwo.aac.repository.UserFavoriteSymbolRepository;
+import com.aac.ieojwo.aac.repository.UtteranceLogRepository;
 import com.aac.ieojwo.common.exception.ConflictException;
 import com.aac.ieojwo.common.exception.ResourceNotFoundException;
 import com.aac.ieojwo.notification.service.NotificationService;
@@ -31,16 +35,19 @@ public class AacUsageService {
 
     private final UserFavoriteSymbolRepository favoriteRepository;
     private final SymbolUsageLogRepository usageLogRepository;
+    private final UtteranceLogRepository utteranceLogRepository;
     private final UserService userService;
     private final SymbolService symbolService;
     private final NotificationService notificationService;
 
     public AacUsageService(UserFavoriteSymbolRepository favoriteRepository,
                            SymbolUsageLogRepository usageLogRepository,
+                           UtteranceLogRepository utteranceLogRepository,
                            UserService userService, SymbolService symbolService,
                            NotificationService notificationService) {
         this.favoriteRepository = favoriteRepository;
         this.usageLogRepository = usageLogRepository;
+        this.utteranceLogRepository = utteranceLogRepository;
         this.userService = userService;
         this.symbolService = symbolService;
         this.notificationService = notificationService;
@@ -49,7 +56,7 @@ public class AacUsageService {
     @Transactional
     public SymbolResponse addFavorite(OidcUser principal, Long userId, Long symbolId) {
         AacUser user = userService.requireAccessibleUser(principal, userId);
-        Symbol symbol = symbolService.getSymbol(symbolId);
+        Symbol symbol = symbolService.getUsableSymbol(symbolId, user);
         if (favoriteRepository.existsByUserIdAndSymbolId(userId, symbolId)) {
             throw new ConflictException("이미 즐겨찾기에 등록된 상징입니다.");
         }
@@ -76,7 +83,7 @@ public class AacUsageService {
     @Transactional
     public UsageLogResponse createUsageLog(OidcUser principal, Long userId, CreateUsageLogRequest request) {
         AacUser user = userService.requireAccessibleUser(principal, userId);
-        Symbol symbol = symbolService.getSymbol(request.symbolId());
+        Symbol symbol = symbolService.getUsableSymbol(request.symbolId(), user);
         LocalDateTime occurredAt = request.occurredAt() == null ? LocalDateTime.now() : request.occurredAt();
         SymbolUsageLog log = SymbolUsageLog.create(user, symbol, request.action(), occurredAt);
         UsageLogResponse response = UsageLogResponse.from(usageLogRepository.save(log));
@@ -100,5 +107,26 @@ public class AacUsageService {
             }
         }
         return uniqueSymbols.values().stream().map(SymbolResponse::from).toList();
+    }
+
+    @Transactional
+    public UtteranceLogResponse createUtteranceLog(OidcUser principal, Long userId,
+                                                   CreateUtteranceLogRequest request) {
+        AacUser user = userService.requireAccessibleUser(principal, userId);
+        symbolService.getUsableCards(request.cardCodes(), user);
+        LocalDateTime occurredAt = request.occurredAt() == null ? LocalDateTime.now() : request.occurredAt();
+        UtteranceLog log = UtteranceLog.create(user, request.cardCodes(), request.converted(),
+                request.spoken(), occurredAt);
+        return UtteranceLogResponse.from(utteranceLogRepository.save(log));
+    }
+
+    // ponytail: 페이지 없이 전체 반환(기기 교체 시 개인 n-gram 복원용). 기록이 수만 건 넘으면 since 커서 페이징 추가.
+    public List<UtteranceLogResponse> findUtteranceLogs(OidcUser principal, Long userId, LocalDateTime since) {
+        userService.requireAccessibleUser(principal, userId);
+        LocalDateTime from = since == null ? LocalDateTime.of(1970, 1, 1, 0, 0) : since;
+        return utteranceLogRepository.findAllByUserIdAndOccurredAtAfterOrderByOccurredAtAsc(userId, from)
+                .stream()
+                .map(UtteranceLogResponse::from)
+                .toList();
     }
 }

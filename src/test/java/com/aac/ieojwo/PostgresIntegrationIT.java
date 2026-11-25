@@ -91,7 +91,7 @@ class PostgresIntegrationIT {
     @Test
     void flywayHibernateRepositoriesConstraintsAndPublicApisWorkOnPostgres() throws Exception {
         assertThat(jdbcTemplate.queryForObject(
-                "select count(*) from flyway_schema_history where success", Integer.class)).isEqualTo(5);
+                "select count(*) from flyway_schema_history where success", Integer.class)).isEqualTo(7);
 
         String suffix = UUID.randomUUID().toString();
         Account account = inTransaction(() -> accountRepository.save(

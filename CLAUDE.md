@@ -50,15 +50,16 @@ Copy-Item .env.example .env      # then set a real local-only password
 .\scripts\postgres-down.ps1 -ResetData   # wipes local DB data
 ```
 
-Postgres profile applies Flyway V1–V5 then runs Hibernate in `ddl-auto=validate` (schema must already match
+Postgres profile applies Flyway V1–V7 then runs Hibernate in `ddl-auto=validate` (schema must already match
 entities — model changes need a new Flyway migration, not just entity edits). Compose binds Postgres to
 `127.0.0.1` only, for local dev — not a deployment config. Full walkthrough: `docs/POSTGRESQL_LOCAL_SETUP.md`.
 
 ## Architecture
 
 **Package-by-feature under `com.aac.ieojwo`**, each module (`account`, `auth`, `guardian`, `user`, `aac`,
-`device`, `symbol`, `common`, `health`) follows `controller/ domain/ dto/ repository/ service/`. Cross-cutting
-concerns (exceptions, `ApiResponse`/`ApiError` envelope, `BaseTimeEntity`) live in `common`.
+`device`, `symbol`, `notification`, `recommend`, `sentence`, `common`, `health`) follows
+`controller/ domain/ dto/ repository/ service/`. Cross-cutting concerns (exceptions, `ApiResponse`/`ApiError`
+envelope, `BaseTimeEntity`) live in `common`.
 
 **Identity model** — three distinct concepts, don't conflate them:
 - `Account` — a person, auth-identified by Google OIDC `sub` (never by email; email/name/picture are synced
@@ -104,7 +105,20 @@ and best-effort pushes through `FcmPushSender` if the guardian has a `pushToken`
 `app.fcm.credentials-path`/`FIREBASE_CREDENTIALS_PATH` is configured (unset in dev — push is skipped, the
 DB row is always the source of truth). `GET/PATCH /api/v1/me/notifications*`, `POST /api/v1/me/push-token`.
 
+**Card recommendation + sentence generation** (spec: `docs/AI_RECOMMENDATION_SPEC.md`; how the implementation
+deviates from it: `docs/progress_yji.md`): next-card n-gram scoring runs **on the app/device**, not here — the
+backend only serves `src/main/resources/models/ngram/model.json` by version (`recommend/`). Cards are the existing
+`Symbol` entity; `symbols.card_code` is the model's card ID (`ic_<category>_<name>`, never changed or reused) and
+`owner_user_id` marks a per-AacUser custom card (`ic_custom_<uuid>`), which must stay invisible to other users
+(`Symbol.isUsableBy`, 404 not 403). `predict` is derived as `!emergency`. H2 seeds the 101 cards from
+`src/main/resources/seed/cards.csv`; Postgres has no card seed until card IDs are finalized. Category codes are
+uppercase in the DB, lowercase in model.json. `sentence/` turns a card sequence into one natural Korean sentence via
+OpenAI Chat Completions (`OpenAiClient`, plain `RestClient`, key in `OPENAI_API_KEY`); with no key/timeout/error it
+falls back to joined labels with `generated=false` and never throws. It is not stored and deliberately has no
+`@Transactional` (no DB connection held during the LLM call). Sentence-level usage goes to `utterance_logs`
+(card order + `converted` + `spoken`, no generated text) for rebuilding the personal n-gram.
+
 **API scope reference**: `docs/API_CONTRACT.md`. Currently implemented: auth, Guardian linking, AAC user
 profile/grid/TTS onboarding, device pairing, ownership checks, symbols, favorites, usage logs, emergency-symbol
-guardian notifications (in-app + best-effort FCM push). Explicitly out of scope: AI sentence generation, IoT,
-WebSocket, deployment.
+guardian notifications (in-app + best-effort FCM push), recommendation model distribution, custom cards, LLM
+sentence generation, utterance logs. Explicitly out of scope: IoT, WebSocket, deployment.

@@ -25,6 +25,11 @@ spring:
       hibernate:
         format_sql: true
     show-sql: true
+  http:
+    client:
+      # 현재 RestClient 사용처는 OpenAI 문장 생성뿐. 초과하면 앱에 카드 라벨 이어붙이기로 대체 응답.
+      connect-timeout: 3s
+      read-timeout: ${OPENAI_TIMEOUT:5s}
   h2:
     console:
       enabled: true
@@ -47,6 +52,11 @@ app:
     qr-prefix: ${PAIRING_QR_PREFIX:malmoa://pair?token=}
   fcm:
     credentials-path: ${FIREBASE_CREDENTIALS_PATH:}
+  recommend:
+    model-location: ${RECOMMEND_MODEL_LOCATION:classpath:models/ngram/model.json}
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    model: ${OPENAI_MODEL:gpt-4.1-mini}
 
 springdoc:
   api-docs:
